@@ -1,0 +1,101 @@
+.dashboard-tabs {
+  display: flex;
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border-light);
+  padding: 0 var(--spacing-4xl);
+  gap: var(--spacing-xs);
+  position: relative;
+  z-index: var(--z-dropdown);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.dashboard-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.dashboard-tab {
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  border: none;
+  background: transparent;
+  color: var(--color-gray-500);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all var(--transition-smooth);
+  position: relative;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.dashboard-tab::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-primary-gradient);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition-smooth);
+}
+
+.dashboard-tab:hover {
+  color: var(--color-gray-700);
+  background: var(--color-gray-50);
+}
+
+.dashboard-tab.active {
+  color: var(--color-primary);
+  background: transparent;
+}
+
+.dashboard-tab.active::before {
+  transform: scaleX(1);
+}
+
+.dashboard-tab.active:hover {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.dashboard-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.dashboard-tab-label {
+  position: relative;
+  display: inline-block;
+  transition: transform var(--transition-base);
+}
+
+.dashboard-tab:hover .dashboard-tab-label {
+  transform: translateY(-1px);
+}
+
+.dashboard-tab:active .dashboard-tab-label {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .dashboard-tabs {
+    padding: 0 var(--spacing-xl);
+    gap: 2px;
+  }
+
+  .dashboard-tab {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-sm);
+  }
+}
+

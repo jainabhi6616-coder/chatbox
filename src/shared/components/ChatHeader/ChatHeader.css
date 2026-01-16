@@ -1,0 +1,108 @@
+.chatbot-header {
+  background: var(--color-secondary);
+  color: var(--color-text-inverse);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  flex-shrink: 0;
+}
+
+.chatbot-header.minimized {
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.chatbot-header.minimized:hover {
+  background: var(--color-secondary-dark);
+}
+
+.chatbot-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chatbot-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.chatbot-header-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-inverse);
+}
+
+.chatbot-header-icon {
+  width: var(--spacing-2xl);
+  height: var(--spacing-2xl);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-symbol {
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  font-style: italic;
+}
+
+.chatbot-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.chatbot-header-button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-base);
+  padding: 0;
+}
+
+.chatbot-header-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.chatbot-header-button:active {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 768px) {
+  .chatbot-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .chatbot-header-title {
+    font-size: var(--font-size-base);
+  }
+
+  .chatbot-header-icon {
+    width: var(--spacing-xl);
+    height: var(--spacing-xl);
+  }
+
+  .icon-symbol {
+    font-size: var(--font-size-sm);
+  }
+
+  .chatbot-header-button {
+    width: var(--spacing-2xl);
+    height: var(--spacing-2xl);
+  }
+}
+

@@ -1,0 +1,60 @@
+.chat-icon-button {
+  position: fixed;
+  bottom: var(--spacing-2xl);
+  right: var(--spacing-2xl);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-gradient);
+  border: none;
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-xl);
+  transition: all var(--transition-slow);
+  z-index: calc(var(--z-modal) - 2);
+}
+
+.chat-icon-button.open {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+.chat-icon-button:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-2xl);
+}
+
+.chat-icon-button:active {
+  transform: scale(0.95);
+}
+
+.chat-icon-badge {
+  position: absolute;
+  top: calc(var(--spacing-xs) * -1);
+  right: calc(var(--spacing-xs) * -1);
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-full);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border: 2px solid var(--color-bg-primary);
+}
+
+@media (max-width: 768px) {
+  .chat-icon-button {
+    bottom: var(--spacing-lg);
+    right: var(--spacing-lg);
+    width: 48px;
+    height: 48px;
+  }
+}
+
