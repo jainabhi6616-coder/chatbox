@@ -1,0 +1,37 @@
+.line-chart-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-lg);
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+}
+
+.line-chart-svg {
+  display: block;
+  margin: 0 auto;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+}
+
+.chart-line {
+  transition: stroke-width var(--transition-base);
+}
+
+.chart-area {
+  transition: opacity var(--transition-base);
+}
+
+.chart-dot {
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.chart-tooltip {
+  pointer-events: none;
+}
+

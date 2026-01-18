@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
 import { ChatHeader, MessagesList, ChatInput, SuggestedQuestions } from '../../shared/components'
 import { useChatbot } from '../../hooks'
 import './Chatbot.css'
@@ -20,11 +20,46 @@ const Chatbot = memo(({ isMinimized = false, onClose, onMinimize, onRestore }: C
     messagesEndRef,
     isLoading,
     suggestedQuestions,
+    lastError,
+    handleRetry,
   } = useChatbot()
+
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleInputChange = useCallback((value: string) => {
     setInputValue(value)
   }, [setInputValue])
+
+  // Auto-focus input when chat opens
+  useEffect(() => {
+    if (!isMinimized && inputRef.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [isMinimized])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (isMinimized) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+K or Cmd+K to focus input
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+      // Escape to close
+      if (e.key === 'Escape' && !isMinimized) {
+        onClose?.()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isMinimized, onClose])
 
   return (
     <div className={`chatbot-modal ${isMinimized ? 'minimized' : ''}`}>
@@ -37,12 +72,21 @@ const Chatbot = memo(({ isMinimized = false, onClose, onMinimize, onRestore }: C
         />
         {!isMinimized && (
           <>
-            <MessagesList messages={messages} messagesEndRef={messagesEndRef} />
-            <SuggestedQuestions
-              questions={suggestedQuestions}
-              onQuestionClick={handleSuggestedQuestionClick}
+            <MessagesList 
+              messages={messages} 
+              messagesEndRef={messagesEndRef}
+              isLoading={isLoading}
+              onRetry={handleRetry}
+              lastError={lastError}
             />
+            {!isLoading && messages.length > 0 && messages[messages.length - 1]?.sender === 'bot' && (
+              <SuggestedQuestions
+                questions={suggestedQuestions}
+                onQuestionClick={handleSuggestedQuestionClick}
+              />
+            )}
             <ChatInput
+              ref={inputRef}
               value={inputValue}
               onChange={handleInputChange}
               onSend={handleSend}
@@ -58,4 +102,3 @@ const Chatbot = memo(({ isMinimized = false, onClose, onMinimize, onRestore }: C
 Chatbot.displayName = 'Chatbot'
 
 export default Chatbot
-

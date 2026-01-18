@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react'
+import { memo, useCallback, useMemo, forwardRef } from 'react'
 import './ChatInput.css'
 
 interface ChatInputProps {
@@ -9,19 +9,21 @@ interface ChatInputProps {
   disabled?: boolean
 }
 
-const ChatInput = memo(({
+const ChatInput = memo(forwardRef<HTMLInputElement, ChatInputProps>(({
   value,
   onChange,
   onSend,
   placeholder = 'Type your message...',
   disabled = false,
-}: ChatInputProps) => {
+}, ref) => {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      onSend()
+      if (!disabled && value.trim() !== '') {
+        onSend()
+      }
     }
-  }, [onSend])
+  }, [onSend, disabled, value])
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value)
@@ -35,6 +37,7 @@ const ChatInput = memo(({
   return (
     <div className="chatbot-input-container">
       <input
+        ref={ref}
         type="text"
         className="chatbot-input"
         placeholder={placeholder}
@@ -42,6 +45,7 @@ const ChatInput = memo(({
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         disabled={disabled}
+        aria-label="Chat input"
       />
       <button
         className="send-button"
@@ -63,9 +67,12 @@ const ChatInput = memo(({
           <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
         </svg>
       </button>
+      <div className="chatbot-input-hint">
+        Press <kbd>Enter</kbd> to send, <kbd>Esc</kbd> to close
+      </div>
     </div>
   )
-})
+}))
 
 ChatInput.displayName = 'ChatInput'
 

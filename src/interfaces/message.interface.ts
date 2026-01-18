@@ -3,6 +3,7 @@ export interface Message {
   text: string
   sender: 'user' | 'bot'
   timestamp: Date
+  rawData?: unknown // Raw data for table display
 }
 
 export type MessageSender = 'user' | 'bot'

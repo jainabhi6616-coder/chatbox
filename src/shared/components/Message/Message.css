@@ -50,11 +50,85 @@
   word-wrap: break-word;
 }
 
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--spacing-xs);
+  gap: var(--spacing-sm);
+}
+
+.message-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.message-retry-button {
+  background: transparent;
+  border: 1px solid var(--color-error);
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: all var(--transition-base);
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.message:hover .message-retry-button {
+  opacity: 1;
+}
+
+.message-retry-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-error);
+}
+
+.message-error {
+  border-left: 3px solid var(--color-error);
+}
+
 .message-time {
   font-size: var(--font-size-xs);
   opacity: 0.7;
-  margin-top: var(--spacing-xs);
-  display: block;
+  flex: 1;
+}
+
+.message-copy-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: all var(--transition-base);
+  color: inherit;
+}
+
+.message:hover .message-copy-button {
+  opacity: 0.7;
+}
+
+.message-copy-button:hover {
+  opacity: 1 !important;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.user-message .message-copy-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.message-copy-button:active {
+  transform: scale(0.95);
 }
 
 @media (max-width: 768px) {

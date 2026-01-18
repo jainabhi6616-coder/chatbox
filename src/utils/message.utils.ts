@@ -34,7 +34,7 @@ export const createInitialBotMessage = (): Message => {
 /**
  * Creates a bot response message (simulated)
  */
-export const createBotResponse = (userMessage: string): Message => {
+export const createBotResponse = (): Message => {
   return createMessage(
     CHATBOT_CONFIG.DEFAULT_BOT_RESPONSE,
     'bot'

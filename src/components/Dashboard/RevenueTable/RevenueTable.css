@@ -1,0 +1,439 @@
+.revenue-table-container {
+  width: 100%;
+  max-width: 100%;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border-medium);
+  overflow: hidden;
+  transition: box-shadow var(--transition-smooth);
+  margin: var(--spacing-2xl) auto;
+}
+
+.revenue-table-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-white) 100%);
+  border-bottom: 2px solid var(--color-border-medium);
+  gap: var(--spacing-xl);
+}
+
+.revenue-table-header-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+}
+
+.revenue-table-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  letter-spacing: -0.5px;
+}
+
+.revenue-table-subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  font-weight: var(--font-weight-normal);
+}
+
+.revenue-table-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  flex-shrink: 0;
+}
+
+.revenue-table-view-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.revenue-table-export-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding-left: var(--spacing-lg);
+  border-left: 1px solid var(--color-border-medium);
+}
+
+.revenue-table-export-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-sm);
+  color: var(--color-gray-700);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.revenue-table-export-btn:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.revenue-table-export-btn:active {
+  transform: translateY(0);
+}
+
+.revenue-table-export-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.revenue-table-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-700);
+  white-space: nowrap;
+}
+
+.revenue-table-dropdown {
+  padding: var(--spacing-md) var(--spacing-xl);
+  border: 2px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  color: var(--color-gray-800);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  min-width: 160px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.revenue-table-dropdown:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
+}
+
+.revenue-table-dropdown:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15), 0 4px 8px rgba(102, 126, 234, 0.1);
+}
+
+.revenue-table-container:hover {
+  box-shadow: var(--shadow-2xl);
+}
+
+.revenue-table-content {
+  width: 100%;
+  min-height: 200px;
+}
+
+.revenue-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: var(--spacing-xl);
+  background: var(--color-white);
+}
+
+.revenue-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: var(--font-size-sm);
+  background: var(--color-white);
+  table-layout: auto;
+  border: 1px solid var(--color-border-medium);
+}
+
+.revenue-table th,
+.revenue-table td {
+  vertical-align: middle;
+}
+
+.revenue-table-header {
+  background: var(--color-gray-800);
+  color: var(--color-white);
+  padding: var(--spacing-md) var(--spacing-lg);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--color-gray-700);
+  border-bottom: 2px solid var(--color-gray-900);
+}
+
+.revenue-table-header:not(:last-child) {
+  border-right: 1px solid var(--color-gray-700);
+}
+
+.revenue-table-header:first-child {
+  border-left: 1px solid var(--color-gray-700);
+}
+
+.revenue-table-header:last-child {
+  text-align: right;
+  border-right: 1px solid var(--color-gray-700);
+}
+
+.revenue-table-row {
+  border-bottom: 1px solid var(--color-border-medium);
+  border-left: 1px solid var(--color-border-medium);
+  border-right: 1px solid var(--color-border-medium);
+  transition: background-color var(--transition-base);
+  background: var(--color-white);
+}
+
+.revenue-table-row:hover {
+  background: var(--color-gray-50);
+}
+
+.revenue-table-row:last-child {
+  border-bottom: 1px solid var(--color-border-medium);
+}
+
+.revenue-table-row-hover {
+  background: var(--color-gray-50) !important;
+  border-left: 2px solid var(--color-primary) !important;
+  border-right: 2px solid var(--color-primary) !important;
+}
+
+.revenue-table-cell {
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--color-gray-800);
+  border-right: 1px solid var(--color-border-medium);
+  border-bottom: 1px solid var(--color-border-medium);
+  position: relative;
+}
+
+.revenue-table-cell:last-child {
+  border-right: 1px solid var(--color-border-medium);
+}
+
+.forecast-cell {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  font-size: var(--font-size-base);
+}
+
+.period-cell {
+  color: var(--color-gray-700);
+  font-weight: var(--font-weight-medium);
+}
+
+.metric-cell {
+  color: var(--color-gray-700);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+}
+
+.value-cell {
+  color: var(--color-gray-900);
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+  text-align: right !important;
+  white-space: nowrap;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  letter-spacing: 0.3px;
+}
+
+.revenue-table-empty-state {
+  padding: var(--spacing-4xl);
+  text-align: center;
+  color: var(--color-gray-500);
+  font-size: var(--font-size-base);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  margin: var(--spacing-2xl);
+}
+
+.revenue-table-empty-state p {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+/* Add subtle animation to table rows */
+@keyframes fadeInRow {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.revenue-table-row {
+  animation: fadeInRow 0.3s ease-out;
+}
+
+.revenue-table-row:nth-child(1) { animation-delay: 0.05s; }
+.revenue-table-row:nth-child(2) { animation-delay: 0.1s; }
+.revenue-table-row:nth-child(3) { animation-delay: 0.15s; }
+.revenue-table-row:nth-child(4) { animation-delay: 0.2s; }
+.revenue-table-row:nth-child(5) { animation-delay: 0.25s; }
+
+/* Chart Styles */
+.revenue-chart-svg {
+  display: block;
+  margin: var(--spacing-xl) auto;
+  background: var(--color-white);
+  max-width: 100%;
+  height: auto;
+}
+
+.revenue-table-content-wrapper {
+  width: 100%;
+  min-height: 400px;
+  background: var(--color-white);
+}
+
+.revenue-table-content {
+  width: 100%;
+  min-height: 200px;
+  padding: var(--spacing-xl);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.revenue-chart-wrapper {
+  width: 100%;
+  min-height: 400px;
+  padding: var(--spacing-xl);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to bottom, var(--color-gray-50) 0%, var(--color-white) 100%);
+}
+
+.chart-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  fill: var(--color-gray-800);
+}
+
+.chart-axis {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+}
+
+.chart-axis-text {
+  font-size: var(--font-size-xs);
+  fill: var(--color-gray-600);
+}
+
+.chart-axis-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  fill: var(--color-gray-700);
+}
+
+.chart-bar {
+  fill: var(--color-primary);
+  transition: all var(--transition-base);
+}
+
+.chart-bar:hover {
+  fill: var(--color-primary-dark);
+  opacity: 0.9;
+}
+
+.chart-line {
+  stroke: var(--color-primary);
+  stroke-width: 3;
+  fill: none;
+}
+
+.chart-dot {
+  fill: var(--color-primary);
+  transition: all var(--transition-base);
+}
+
+.chart-dot:hover {
+  fill: var(--color-primary-dark);
+  r: 8;
+}
+
+.chart-pie-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  fill: var(--color-white);
+  pointer-events: none;
+}
+
+.chart-legend-text {
+  font-size: var(--font-size-xs);
+  fill: var(--color-gray-700);
+}
+
+@media (max-width: 768px) {
+  .revenue-table-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg);
+  }
+
+  .revenue-table-header-section {
+    width: 100%;
+  }
+
+  .revenue-table-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  .revenue-table-view-selector {
+    width: 100%;
+  }
+
+  .revenue-table-export-buttons {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--color-border-medium);
+    padding-left: 0;
+    padding-top: var(--spacing-md);
+  }
+
+  .revenue-table-dropdown {
+    width: 100%;
+  }
+
+  .revenue-table-wrapper {
+    padding: var(--spacing-lg);
+  }
+
+  .revenue-table-header,
+  .revenue-table-cell {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-xs);
+  }
+
+  .revenue-table-container {
+    border-radius: var(--radius-lg);
+    margin: var(--spacing-lg) auto;
+  }
+
+  .revenue-chart-wrapper {
+    padding: var(--spacing-lg);
+    min-height: 400px;
+  }
+
+  .revenue-chart-svg {
+    width: 100%;
+    height: auto;
+  }
+}
+
