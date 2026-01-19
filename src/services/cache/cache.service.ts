@@ -84,25 +84,9 @@ class CacheService {
       keys: Array.from(this.cache.keys()),
     }
   }
-
-  /**
-   * Get expired cache entry (for fallback)
-   */
-  getExpired(query: string): ChatResponse | null {
-    const cacheKey = this.getCacheKey(query)
-    const cached = this.cache.get(cacheKey)
-
-    if (cached) {
-      return {
-        ...cached.response,
-        cached: true,
-      }
-    }
-
-    return null
-  }
 }
 
 // Export singleton instance
 export const cacheService = new CacheService()
+
 

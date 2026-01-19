@@ -89,13 +89,11 @@ export const useChatbot = () => {
         setRevenueData(response.rawData)
       }
       
-      // Update suggested questions if provided in response
-      // If API provides suggested questions, use them; otherwise keep default
+      // Update suggested questions based on API response
+      // Use API suggested questions if provided, otherwise use default questions
       if (response.suggestedQuestions && response.suggestedQuestions.length > 0) {
         setSuggestedQuestions(response.suggestedQuestions)
       } else {
-        // If no suggested questions in response, keep default questions
-        // This ensures we always have suggested questions available
         setSuggestedQuestions([...DEFAULT_SUGGESTED_QUESTIONS])
       }
       
@@ -107,13 +105,19 @@ export const useChatbot = () => {
       const err = error instanceof Error ? error : new Error('Unknown error')
       setLastError({ query: textToSend, error: err })
       
+      // Extract error message for better user feedback
+      const errorMessageText = err.message || 'Sorry, I encountered an error processing your request. Please try again or click retry.'
+      
       // Show error message to user
       const errorMessage = createMessage(
-        'Sorry, I encountered an error processing your request. Please try again or click retry.',
+        `Error: ${errorMessageText}`,
         'bot'
       )
       setMessages((prev) => [...prev, errorMessage])
-      showToast('Failed to get response. Click retry to try again.', 'error', 4000)
+      showToast('Failed to get response from API. Click retry to try again.', 'error', 4000)
+      
+      // Clear revenue data on error to prevent showing stale data
+      setRevenueData(null)
     } finally {
       setIsLoading(false)
     }

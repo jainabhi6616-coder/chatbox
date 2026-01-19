@@ -3,15 +3,8 @@
  */
 
 import { isRevenueForecastData } from './data-parser.utils'
-
-interface ApiMessage {
-  role: 'user' | 'assistant'
-  content: string | { output: unknown }
-}
-
-interface ApiResponse {
-  messages: ApiMessage[]
-}
+import type { SuggestedQuestion } from '../services/graphql/types'
+import type { ApiMessage, ApiResponse } from '../types/api.types'
 
 /**
  * Extract the last assistant message from API response
@@ -37,6 +30,23 @@ export const extractRawData = (message: ApiMessage): unknown | null => {
     'output' in message.content
   ) {
     return (message.content as { output: unknown }).output
+  }
+  return null
+}
+
+/**
+ * Extract suggested questions from assistant message
+ */
+export const extractSuggestedQuestions = (message: ApiMessage): SuggestedQuestion[] | null => {
+  if (
+    message.content &&
+    typeof message.content === 'object' &&
+    'suggestedQuestions' in message.content
+  ) {
+    const suggestedQuestions = (message.content as { suggestedQuestions?: SuggestedQuestion[] }).suggestedQuestions
+    if (Array.isArray(suggestedQuestions) && suggestedQuestions.length > 0) {
+      return suggestedQuestions
+    }
   }
   return null
 }
@@ -70,19 +80,23 @@ export const formatAssistantContent = (content: string | { output: unknown }): s
 }
 
 /**
- * Process API response and extract formatted content and raw data
+ * Process API response and extract formatted content, raw data, and suggested questions
  */
 export const processApiResponse = (data: ApiResponse): {
   formattedResponse: string
   rawData: unknown | null
+  suggestedQuestions: SuggestedQuestion[] | null
 } => {
   const assistantMessage = extractAssistantMessage(data)
   const rawData = extractRawData(assistantMessage)
+  const suggestedQuestions = extractSuggestedQuestions(assistantMessage)
   const formattedResponse = formatAssistantContent(assistantMessage.content)
 
   return {
     formattedResponse,
     rawData,
+    suggestedQuestions,
   }
 }
+
 

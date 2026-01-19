@@ -2,9 +2,11 @@
  * Type definitions for API requests and responses
  */
 
+import type { SuggestedQuestion } from '../services/graphql/types'
+
 export interface ApiMessage {
   role: 'user' | 'assistant'
-  content: string | { output: unknown }
+  content: string | { output: unknown; suggestedQuestions?: SuggestedQuestion[] }
 }
 
 export interface ApiRequest {
@@ -16,4 +18,5 @@ export interface ApiResponse {
   Account: string
   messages: ApiMessage[]
 }
+
 

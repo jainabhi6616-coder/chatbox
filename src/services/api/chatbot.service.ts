@@ -11,64 +11,6 @@ import { processApiResponse } from '../../utils/response.utils'
 import type { ApiRequest, ApiResponse } from '../../types/api.types'
 
 /**
- * Sample fallback response for error cases
- */
-const SAMPLE_FALLBACK_RESPONSE: ApiResponse = {
-  Account: 'Revenue',
-  messages: [
-    {
-      role: 'user',
-      content: 'give the forecast revenue',
-    },
-    {
-      role: 'assistant',
-      content: {
-        output: {
-          OVERALL: {
-            FY25: {
-              PREDICTION11: {
-                OCTOBER: {
-                  LSCO: {
-                    GLOBAL: 536963416.6231,
-                  },
-                },
-                NOVEMBER: {
-                  LSCO: {
-                    GLOBAL: 572801080.6377001,
-                  },
-                },
-                Q4: {
-                  LSCO: {
-                    GLOBAL: 1691636099.8604,
-                  },
-                },
-              },
-              FCST10: {
-                OCTOBER: {
-                  LSCO: {
-                    GLOBAL: 540662657.7147286,
-                  },
-                },
-                NOVEMBER: {
-                  LSCO: {
-                    GLOBAL: 567014546.5863522,
-                  },
-                },
-                Q4: {
-                  LSCO: {
-                    GLOBAL: 1716054404.2096605,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  ],
-}
-
-/**
  * Create a ChatResponse from API response data
  */
 const createChatResponse = (
@@ -77,7 +19,7 @@ const createChatResponse = (
   conversationId?: string,
   cached: boolean = false
 ): ChatResponse => {
-  const { formattedResponse, rawData } = processApiResponse(data)
+  const { formattedResponse, rawData, suggestedQuestions } = processApiResponse(data)
 
   return {
     id: cached ? `cached_${Date.now()}` : `resp_${Date.now()}`,
@@ -87,6 +29,7 @@ const createChatResponse = (
     timestamp: new Date().toISOString(),
     conversationId,
     rawData: rawData || undefined,
+    suggestedQuestions: suggestedQuestions || undefined,
   }
 }
 
@@ -114,10 +57,25 @@ const callPythonEndpoint = async (
   })
 
   if (!response.ok) {
-    throw new Error(`Python API error: ${response.status} ${response.statusText}`)
+    const errorText = await response.text().catch(() => response.statusText)
+    throw new Error(
+      `API request failed: ${response.status} ${response.statusText}. ${errorText}`
+    )
   }
 
-  const data: ApiResponse = await response.json()
+  let data: ApiResponse
+  try {
+    data = await response.json()
+  } catch (parseError) {
+    throw new Error(
+      `Failed to parse API response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
+    )
+  }
+
+  // Validate response structure
+  if (!data || !data.messages || !Array.isArray(data.messages)) {
+    throw new Error('Invalid API response: missing or invalid messages array')
+  }
 
   // Update conversation history
   conversationService.updateHistory(conversationIdKey, data.messages)
@@ -136,48 +94,32 @@ const callPythonViaGraphQL = async (
   const { apolloClient } = await import('../graphql/apollo-client')
   const { GET_CHATBOT_RESPONSE } = await import('../graphql/queries')
 
-  const { data } = await apolloClient.query<{ getChatbotResponse: ChatResponse }>({
-    query: GET_CHATBOT_RESPONSE,
-    variables: {
-      query,
-      conversationId,
-    },
-    fetchPolicy: 'network-only',
-  })
+  try {
+    const result = await apolloClient.query<{ getChatbotResponse: ChatResponse }>({
+      query: GET_CHATBOT_RESPONSE,
+      variables: {
+        query,
+        conversationId,
+      },
+      fetchPolicy: 'network-only',
+    })
 
-  if (!data) {
-    throw new Error('No data returned from GraphQL query')
+    // Check for GraphQL errors
+    if (result.error) {
+      throw new Error(`GraphQL error: ${result.error.message}`)
+    }
+
+    if (!result.data || !result.data.getChatbotResponse) {
+      throw new Error('No data returned from GraphQL query')
+    }
+
+    return result.data.getChatbotResponse
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`GraphQL request failed: ${error.message}`)
+    }
+    throw new Error('GraphQL request failed: Unknown error')
   }
-
-  return data.getChatbotResponse
-}
-
-/**
- * Get fallback response when API call fails
- */
-const getFallbackResponse = (
-  query: string,
-  conversationId?: string
-): ChatResponse => {
-  const conversationIdKey = conversationId || 'default'
-  const history = conversationService.getHistory(conversationIdKey)
-  
-  const updatedHistory: ApiResponse['messages'] = [
-    ...history,
-    {
-      role: 'user',
-      content: query,
-    },
-    SAMPLE_FALLBACK_RESPONSE.messages.find((msg) => msg.role === 'assistant')!,
-  ]
-
-  conversationService.updateHistory(conversationIdKey, updatedHistory)
-
-  return createChatResponse(
-    { ...SAMPLE_FALLBACK_RESPONSE, messages: updatedHistory },
-    query,
-    conversationId
-  )
 }
 
 /**
@@ -195,40 +137,20 @@ export const getChatbotResponse = async (
     return cached
   }
 
-  try {
-    let response: ChatResponse
+  let response: ChatResponse
 
-    if (APP_CONFIG.USE_GRAPHQL) {
-      // Call through GraphQL middleware
-      response = await callPythonViaGraphQL(query, conversationId)
-    } else {
-      // Call Python endpoint directly
-      response = await callPythonEndpoint(query, conversationId)
-    }
-
-    // Store in cache
-    cacheService.set(query, response)
-
-    return response
-  } catch (error) {
-    console.error('Error fetching chatbot response:', error)
-    console.log('Using sample fallback response due to error')
-
-    // Try to use expired cache as fallback
-    const expiredCache = cacheService.getExpired(query)
-    if (expiredCache) {
-      console.log('Using expired cache as fallback')
-      return expiredCache
-    }
-
-    // Use sample fallback response
-    const fallbackResponse = getFallbackResponse(query, conversationId)
-    
-    // Store fallback in cache
-    cacheService.set(query, fallbackResponse)
-
-    return fallbackResponse
+  if (APP_CONFIG.USE_GRAPHQL) {
+    // Call through GraphQL middleware
+    response = await callPythonViaGraphQL(query, conversationId)
+  } else {
+    // Call Python endpoint directly
+    response = await callPythonEndpoint(query, conversationId)
   }
+
+  // Store in cache only if successful
+  cacheService.set(query, response)
+
+  return response
 }
 
 /**

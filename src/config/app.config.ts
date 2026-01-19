@@ -24,3 +24,4 @@ export const APP_CONFIG = {
 
 export type AppConfig = typeof APP_CONFIG
 
+
