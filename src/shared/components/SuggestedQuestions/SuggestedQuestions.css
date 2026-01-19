@@ -87,9 +87,13 @@
   transition: color 0.2s ease;
   position: relative;
   z-index: 1;
-  white-space: nowrap;
+  /* Allow long questions to wrap onto multiple lines */
+  white-space: normal;
   letter-spacing: 0.1px;
   display: inline-block;
+  /* Prevent text from touching the card edges on long lines */
+  max-width: min(100%, 320px);
+  text-align: left;
 }
 
 .suggested-question-card:hover .suggested-question-text {
