@@ -4,8 +4,10 @@ import type { SuggestedQuestion } from '../services/graphql/types'
 
 export interface DashboardTab {
   id: string
+  /** Tab heading from API "tab information" key */
   label: string
-  tabInformation: string
+  /** Content sent to execute_suggestion API (from API "question" key) */
+  contentForApi: string
 }
 
 interface DashboardContextType {
@@ -23,8 +25,8 @@ const MAX_TABS = 3
 function toDashboardTab(sq: SuggestedQuestion, index: number): DashboardTab {
   return {
     id: sq.id || `tab-${index + 1}`,
-    label: sq.text,
-    tabInformation: sq.tabInformation ?? sq.text,
+    label: sq.tabInformation ?? sq.text,
+    contentForApi: sq.text,
   }
 }
 
@@ -49,7 +51,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     try {
       const results = await Promise.all(
         newTabs.map((tab) =>
-          executeSuggestion(tab.tabInformation).catch(() => null)
+          executeSuggestion(tab.contentForApi).catch(() => null)
         )
       )
       setTabData(results)
