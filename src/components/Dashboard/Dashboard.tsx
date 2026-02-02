@@ -1,18 +1,33 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import DashboardHeader from './DashboardHeader'
 import DashboardTabs from './DashboardTabs'
 import Chatbot from '../Chatbot'
 import ChatIcon from '../../shared/components/ChatIcon'
 import RevenueTable from './RevenueTable/RevenueTable'
 import EmptyState from '../../shared/components/EmptyState'
-import { useRevenueData } from '../../contexts/RevenueDataContext'
+import LoadingIndicator from '../../shared/components/LoadingIndicator'
+import { useDashboard } from '../../contexts/DashboardContext'
 import './Dashboard.css'
+
+const DEFAULT_TABS = [
+  { id: '1', label: 'US Sales Deep Dive' },
+  { id: '2', label: 'US Sales at Product Level' },
+  { id: '3', label: 'US Sales Growth Trend' },
+] as const
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState(0)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isChatMinimized, setIsChatMinimized] = useState(false)
-  const { revenueData } = useRevenueData()
+  const { tabs, tabData, loadingTabs } = useDashboard()
+
+  const displayTabs = useMemo(
+    () =>
+      tabs.length > 0
+        ? tabs.map((t) => ({ id: t.id, label: t.label }))
+        : DEFAULT_TABS.map((t) => ({ id: t.id, label: t.label })),
+    [tabs]
+  )
 
   const handleChatToggle = useCallback(() => {
     if (isChatOpen) {
@@ -40,31 +55,34 @@ const Dashboard = () => {
     setActiveTab(index)
   }, [])
 
+  const currentTabData = tabs.length > 0 ? tabData[activeTab] ?? null : null
+  const currentTabLabel = displayTabs[activeTab]?.label ?? ''
+
   return (
     <div className="dashboard">
       <DashboardHeader />
-      <DashboardTabs activeTab={activeTab} onTabChange={handleTabChange} />
+      <DashboardTabs
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        tabs={displayTabs}
+      />
       <div className="dashboard-content">
         <div className="dashboard-main">
-          {activeTab === 0 ? (
-            // US Sales Deep Dive tab
-            <div className="dashboard-tab-content">
-              {revenueData ? (
-                <RevenueTable data={revenueData} />
-              ) : (
-                <EmptyState
-                  title="No Revenue Data"
-                  message="Start a conversation in the chatbot to view revenue forecasts and analytics. Try asking questions like 'What is the revenue forecast?' or 'Show me Q4 predictions'."
-                />
-              )}
-            </div>
-          ) : (
-            // Other tabs
-            <div className="dashboard-placeholder">
-              <h2>Dashboard Content</h2>
-              <p>Active Tab: {activeTab + 1}</p>
-            </div>
-          )}
+          <div className="dashboard-tab-content">
+            {loadingTabs && tabs.length > 0 ? (
+              <LoadingIndicator message="Loading tab data…" />
+            ) : currentTabData ? (
+              <RevenueTable
+                data={currentTabData}
+                title={currentTabLabel}
+              />
+            ) : (
+              <EmptyState
+                title={currentTabLabel ? `No data for ${currentTabLabel}` : 'No data'}
+                message="Start a conversation in the chatbot. Tabs and data will update from the API response and execute_suggestion."
+              />
+            )}
+          </div>
         </div>
       </div>
       

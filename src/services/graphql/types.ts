@@ -1,6 +1,8 @@
 export interface SuggestedQuestion {
   id: string
   text: string
+  /** Used as tab label and as content for execute_suggestion API */
+  tabInformation?: string
 }
 
 export interface ChatResponse {

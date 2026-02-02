@@ -6,6 +6,7 @@
 export const APP_CONFIG = {
   // API Configuration
   PYTHON_API_ENDPOINT: import.meta.env.VITE_PYTHON_API_ENDPOINT || 'http://az1lxappd01.levi.com:8000/chat',
+  EXECUTE_SUGGESTION_ENDPOINT: import.meta.env.VITE_EXECUTE_SUGGESTION_ENDPOINT || 'http://az1lxappd01.levi.com:8000/chat/execute_suggestion',
   GRAPHQL_ENDPOINT: import.meta.env.VITE_GRAPHQL_ENDPOINT || 'http://localhost:8000/graphql',
   USE_GRAPHQL: import.meta.env.VITE_USE_GRAPHQL === 'true',
   ACCOUNT_TYPE: import.meta.env.VITE_ACCOUNT_TYPE || 'Revenue',

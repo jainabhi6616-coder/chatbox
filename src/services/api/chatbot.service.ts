@@ -72,14 +72,20 @@ const callPythonEndpoint = async (
     )
   }
 
-  // Validate response structure
-  if (!data || !data.messages || !Array.isArray(data.messages)) {
-    throw new Error('Invalid API response: missing or invalid messages array')
+  if (!data) {
+    throw new Error('Invalid API response: empty body')
   }
 
-  // Update conversation history
-  conversationService.updateHistory(conversationIdKey, data.messages)
+  // Top-level output format (output + suggested_questions)
+  if (data.output !== undefined) {
+    return createChatResponse(data, query, conversationId)
+  }
 
+  // Messages format
+  if (!data.messages || !Array.isArray(data.messages)) {
+    throw new Error('Invalid API response: missing or invalid messages array')
+  }
+  conversationService.updateHistory(conversationIdKey, data.messages)
   return createChatResponse(data, query, conversationId)
 }
 
@@ -180,4 +186,57 @@ export const clearConversationHistory = (conversationId?: string): void => {
  */
 export const getCacheStats = () => {
   return cacheService.getStats()
+}
+
+/** Response from execute_suggestion: output and optional suggested_questions */
+export interface ExecuteSuggestionResponse {
+  output?: unknown
+  suggested_questions?: unknown[]
+}
+
+/**
+ * Call execute_suggestion API to get tab data (content = tab information value)
+ */
+export const executeSuggestion = async (content: string): Promise<unknown | null> => {
+  const requestBody = {
+    Account: APP_CONFIG.ACCOUNT_TYPE,
+    messages: [{ role: 'user' as const, content }],
+  }
+
+  const response = await fetch(APP_CONFIG.EXECUTE_SUGGESTION_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => response.statusText)
+    throw new Error(
+      `Execute suggestion failed: ${response.status} ${response.statusText}. ${errorText}`
+    )
+  }
+
+  let data: ExecuteSuggestionResponse & { messages?: unknown[] }
+  try {
+    data = await response.json()
+  } catch (parseError) {
+    throw new Error(
+      `Failed to parse execute_suggestion response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
+    )
+  }
+
+  if (data.output !== undefined) {
+    return data.output
+  }
+  if (data.messages && Array.isArray(data.messages)) {
+    const messages = data.messages as Array<{ role?: string; content?: unknown }>
+    const last = messages.filter((m) => m.role === 'assistant').pop()
+    if (last && typeof last === 'object' && 'content' in last) {
+      const c = last.content
+      if (c && typeof c === 'object' && c !== null && 'output' in c) {
+        return (c as { output: unknown }).output
+      }
+    }
+  }
+  return null
 }

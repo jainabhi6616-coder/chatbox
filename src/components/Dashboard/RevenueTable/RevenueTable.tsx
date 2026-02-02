@@ -8,10 +8,12 @@ import './RevenueTable.css'
 type ViewType = 'table' | 'bar' | 'line' | 'pie'
 
 interface RevenueTableProps {
-  data?: any // The output object from the API response
+  data?: unknown
+  /** Tab/section title (e.g. from suggested_questions question) */
+  title?: string
 }
 
-const RevenueTable = ({ data }: RevenueTableProps) => {
+const RevenueTable = ({ data, title }: RevenueTableProps) => {
   const tableRef = useRef<HTMLDivElement>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [viewType, setViewType] = useState<ViewType>('table')
@@ -155,7 +157,7 @@ const RevenueTable = ({ data }: RevenueTableProps) => {
     <div className="revenue-table-container">
       <div className="revenue-table-controls">
         <div className="revenue-table-header-section">
-          <h3 className="revenue-table-title">US Sales Deep Dive</h3>
+          <h3 className="revenue-table-title">{title ?? 'US Sales Deep Dive'}</h3>
           <p className="revenue-table-subtitle">Revenue forecast analysis</p>
         </div>
         <div className="revenue-table-actions">

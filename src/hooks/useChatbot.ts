@@ -8,6 +8,7 @@ import { scrollToBottom } from '../utils/scroll.utils'
 import { DEFAULT_SUGGESTED_QUESTIONS } from '../constants'
 import { getChatbotResponse, clearConversationHistory } from '../services'
 import { useRevenueData } from '../contexts/RevenueDataContext'
+import { useDashboard } from '../contexts/DashboardContext'
 import { useToast } from '../contexts/ToastContext'
 import {
   saveMessagesToStorage,
@@ -41,6 +42,7 @@ export const useChatbot = () => {
   const storedConversationId = loadConversationId()
   const conversationIdRef = useRef<string>(storedConversationId || Date.now().toString())
   const { setRevenueData } = useRevenueData()
+  const { setTabsAndFetchData, clearDashboard } = useDashboard()
   const { showToast } = useToast()
 
   // Save messages to localStorage whenever they change
@@ -89,10 +91,10 @@ export const useChatbot = () => {
         setRevenueData(response.rawData)
       }
       
-      // Update suggested questions based on API response
-      // Use API suggested questions if provided, otherwise use default questions
+      // Update suggested questions and dynamic dashboard tabs from API response
       if (response.suggestedQuestions && response.suggestedQuestions.length > 0) {
         setSuggestedQuestions(response.suggestedQuestions)
+        setTabsAndFetchData(response.suggestedQuestions)
       } else {
         setSuggestedQuestions([...DEFAULT_SUGGESTED_QUESTIONS])
       }
@@ -121,7 +123,7 @@ export const useChatbot = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [inputValue, isLoading, showToast, setRevenueData])
+  }, [inputValue, isLoading, showToast, setRevenueData, setTabsAndFetchData])
 
   const handleRetry = useCallback(() => {
     if (lastError) {
@@ -135,19 +137,15 @@ export const useChatbot = () => {
 
   const clearMessages = useCallback(() => {
     setMessages([createInitialBotMessage()])
-    // Reset to default suggested questions
     setSuggestedQuestions([...DEFAULT_SUGGESTED_QUESTIONS])
-    // Clear conversation history for this conversation
     clearConversationHistory(conversationIdRef.current)
-    // Clear localStorage
     clearMessagesFromStorage()
-    // Clear revenue data
     setRevenueData(null)
-    // Generate new conversation ID when clearing
+    clearDashboard()
     conversationIdRef.current = Date.now().toString()
     setLastError(null)
     showToast('Conversation cleared', 'info', 2000)
-  }, [showToast, setRevenueData])
+  }, [showToast, setRevenueData, clearDashboard])
 
   return {
     messages,

@@ -15,8 +15,11 @@ export interface ApiRequest {
 }
 
 export interface ApiResponse {
-  Account: string
-  messages: ApiMessage[]
+  Account?: string
+  messages?: ApiMessage[]
+  /** Top-level format: output and suggested_questions (snake_case) */
+  output?: unknown
+  suggested_questions?: Array<{ question: string; 'tab information'?: string }>
 }
 
 
