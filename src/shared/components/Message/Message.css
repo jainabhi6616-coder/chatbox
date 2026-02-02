@@ -50,6 +50,25 @@
   word-wrap: break-word;
 }
 
+.message-chart-wrap {
+  width: 100%;
+  min-width: 280px;
+  max-width: 420px;
+  margin-top: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.message-chart-label {
+  margin-bottom: var(--spacing-sm) !important;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+}
+
 .message-footer {
   display: flex;
   align-items: center;

@@ -21,13 +21,15 @@ const Dashboard = () => {
   const [isChatMinimized, setIsChatMinimized] = useState(false)
   const { tabs, tabData, loadingTabs } = useDashboard()
 
-  const displayTabs = useMemo(
-    () =>
+  const displayTabs = useMemo(() => {
+    const capitalizeWords = (s: string) =>
+      s.replace(/\b\w/g, (c) => c.toUpperCase())
+    const list =
       tabs.length > 0
-        ? tabs.map((t) => ({ id: t.id, label: t.label }))
-        : DEFAULT_TABS.map((t) => ({ id: t.id, label: t.label })),
-    [tabs]
-  )
+        ? tabs.map((t) => ({ id: t.id, label: capitalizeWords(t.label) }))
+        : DEFAULT_TABS.map((t) => ({ id: t.id, label: t.label }))
+    return list
+  }, [tabs])
 
   const handleChatToggle = useCallback(() => {
     if (isChatOpen) {

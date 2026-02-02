@@ -89,7 +89,7 @@ export const formatAssistantContent = (content: string | { output: unknown }): s
     const output = (content as { output: unknown }).output
 
     if (isChartableData(output)) {
-      return 'Please refer to the dashboard tabs for detailed results.'
+      return 'Data overview'
     }
 
     // Response 1: output.response is a string message

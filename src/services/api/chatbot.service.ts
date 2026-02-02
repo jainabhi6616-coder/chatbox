@@ -200,7 +200,7 @@ export interface ExecuteSuggestionResponse {
 export const executeSuggestion = async (content: string): Promise<unknown | null> => {
   const requestBody = {
     Account: APP_CONFIG.ACCOUNT_TYPE,
-    messages: [{ role: 'user' as const, content }],
+    question:  content ,
   }
 
   const response = await fetch(APP_CONFIG.EXECUTE_SUGGESTION_ENDPOINT, {

@@ -16,7 +16,7 @@ interface RevenueTableProps {
 const RevenueTable = ({ data, title }: RevenueTableProps) => {
   const tableRef = useRef<HTMLDivElement>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
-  const [viewType, setViewType] = useState<ViewType>('table')
+  const [viewType, setViewType] = useState<ViewType>('bar')
   const [containerWidth, setContainerWidth] = useState(800)
 
   // Parse data once

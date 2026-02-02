@@ -1,7 +1,9 @@
-import { memo, useMemo, useState, useCallback } from 'react'
+import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { Message as MessageType } from '../../../interfaces'
 import { formatMessageTime } from '../../../utils'
+import { parseResponseData, isChartableData } from '../../../utils/data-parser.utils'
 import { useToast } from '../../../contexts/ToastContext'
+import { BarChart } from '../Charts'
 import './Message.css'
 
 interface MessageProps {
@@ -12,6 +14,8 @@ interface MessageProps {
 
 const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => {
   const [copied, setCopied] = useState(false)
+  const chartWrapRef = useRef<HTMLDivElement>(null)
+  const [chartWidth, setChartWidth] = useState(320)
   const { showToast } = useToast()
   const isUserMessage = message.sender === 'user'
   const formattedTime = useMemo(
@@ -19,7 +23,22 @@ const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => 
     [message.timestamp]
   )
 
-  // Ensure text is always a string (safety check)
+  const hasChartableData = message.rawData != null && isChartableData(message.rawData)
+  const chartData = useMemo(() => {
+    if (!message.rawData) return parseResponseData(null)
+    return parseResponseData(message.rawData)
+  }, [message.rawData])
+
+  useEffect(() => {
+    if (!hasChartableData || !chartWrapRef.current) return
+    const el = chartWrapRef.current
+    const update = () => setChartWidth(Math.min(el.offsetWidth || 320, 420))
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [hasChartableData])
+
   const messageText = typeof message.text === 'string' ? message.text : String(message.text || '')
 
   const handleCopy = useCallback(async () => {
@@ -34,14 +53,21 @@ const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => 
     }
   }, [messageText, showToast])
 
-  const isError = showRetry && message.sender === 'bot' && messageText.includes('error')
+  const isError = showRetry && message.sender === 'bot' && messageText.toLowerCase().includes('error')
 
   return (
     <div
       className={`message ${isUserMessage ? 'user-message' : 'bot-message'} ${isError ? 'message-error' : ''}`}
     >
       <div className="message-content">
-        <p>{messageText}</p>
+        {hasChartableData && chartData.hasData ? (
+          <div className="message-chart-wrap" ref={chartWrapRef}>
+            <p className="message-chart-label">{messageText}</p>
+            <BarChart data={chartData.rows} containerWidth={chartWidth} />
+          </div>
+        ) : (
+          <p>{messageText}</p>
+        )}
         <div className="message-footer">
           <span className="message-time">{formattedTime}</span>
           <div className="message-actions">
