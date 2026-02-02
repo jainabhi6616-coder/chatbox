@@ -1,5 +1,6 @@
 /**
- * Parse nested response data into flat table structure
+ * Parse nested response data into flat table structure.
+ * Structure-agnostic: works for any key names by inferring layout from paths to numeric leaves.
  */
 
 export interface TableRow {
@@ -15,7 +16,7 @@ export interface ParsedData {
 }
 
 /**
- * Check if output is text-only (Response 1: no chartable data)
+ * Check if output is text-only (single key "response" with string value — not chartable)
  */
 const isTextOnlyOutput = (data: unknown): boolean => {
   if (!data || typeof data !== 'object') return true
@@ -28,68 +29,7 @@ const isTextOnlyOutput = (data: unknown): boolean => {
 }
 
 /**
- * Check if data is chartable (Response 2/3 or OVERALL/FY25) — show graphs in tabs
- */
-export const isChartableData = (data: unknown): boolean => {
-  if (!data || typeof data !== 'object') return false
-  if (isTextOnlyOutput(data)) return false
-
-  const o = data as Record<string, unknown>
-
-  // OVERALL > FY25 (legacy)
-  if (
-    o.OVERALL &&
-    typeof o.OVERALL === 'object' &&
-    (o.OVERALL as Record<string, unknown>).FY25
-  ) {
-    return true
-  }
-
-  // TOTAL CHANNEL (Response 2: FY26 > PREDICTION2 > periods > VALUE > LSCO > GLOBAL)
-  if (o['TOTAL CHANNEL'] && typeof o['TOTAL CHANNEL'] === 'object') {
-    const tc = o['TOTAL CHANNEL'] as Record<string, unknown>
-    for (const key of Object.keys(tc)) {
-      const val = tc[key]
-      if (val && typeof val === 'object' && !Array.isArray(val)) {
-        return true
-      }
-    }
-  }
-
-  // Channel-style: EXTERNAL DTC FP&A, EXTERNAL WHLS FP&A, TOTAL CHANNEL > FY26 > ACTUAL > TOTAL > Revenue > LSCO > GLOBAL
-  for (const key of Object.keys(o)) {
-    if (key === 'response') continue
-    const val = o[key]
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      return true
-    }
-  }
-
-  return false
-}
-
-/** @deprecated Use isChartableData */
-export const isRevenueForecastData = (data: unknown): boolean => {
-  return isChartableData(data)
-}
-
-/**
- * Extract the first leaf number from a nested object (for channel-style single value per key)
- */
-const extractLeafNumber = (obj: Record<string, unknown>): number | null => {
-  for (const key of Object.keys(obj)) {
-    const val = obj[key]
-    if (typeof val === 'number') return val
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      const nested = extractLeafNumber(val as Record<string, unknown>)
-      if (nested !== null) return nested
-    }
-  }
-  return null
-}
-
-/**
- * Recursively collect leaf numbers with path (for generic fallback)
+ * Recursively collect all leaf numbers with their full path (key1 > key2 > ... > keyN -> value)
  */
 const collectLeafNumbers = (
   obj: Record<string, unknown>,
@@ -114,165 +54,77 @@ const collectLeafNumbers = (
 }
 
 /**
- * Parse the response output into table rows (OVERALL/FY25, TOTAL CHANNEL Response 2 & 3, or generic)
+ * Check if data is chartable (has at least one numeric leaf and is not text-only)
+ */
+export const isChartableData = (data: unknown): boolean => {
+  if (!data || typeof data !== 'object') return false
+  if (isTextOnlyOutput(data)) return false
+  const collected: { path: string; value: number }[] = []
+  collectLeafNumbers(data as Record<string, unknown>, '', collected)
+  return collected.length > 0
+}
+
+/** @deprecated Use isChartableData */
+export const isRevenueForecastData = (data: unknown): boolean => {
+  return isChartableData(data)
+}
+
+/**
+ * Infer which path segment index is the "category" (e.g. channel, period) for the chart.
+ * Chooses the index with the most distinct values so the bar chart has one bar per category.
+ */
+const inferCategorySegmentIndex = (paths: string[][]): number => {
+  if (paths.length === 0) return 0
+  const maxLen = Math.max(...paths.map((p) => p.length))
+  let bestIndex = 0
+  let maxDistinct = 0
+  for (let i = 0; i < maxLen; i++) {
+    const distinct = new Set(paths.map((p) => p[i]).filter(Boolean))
+    if (distinct.size >= maxDistinct) {
+      maxDistinct = distinct.size
+      bestIndex = i
+    }
+  }
+  return bestIndex
+}
+
+/**
+ * Parse any nested response into table rows by walking the structure and inferring dimensions.
+ * Keys can be any names; the parser uses path structure to set Forecast, Period, Metric, Value.
  */
 export const parseResponseData = (output: unknown): ParsedData => {
   if (!output || typeof output !== 'object') {
     return { rows: [], hasData: false }
   }
 
-  const rows: TableRow[] = []
   const o = output as Record<string, unknown>
-
-  // OVERALL > FY25 > PREDICTION11/FCST10 > OCTOBER/NOVEMBER/Q4 > LSCO > GLOBAL
-  if (o.OVERALL && typeof o.OVERALL === 'object') {
-    const overall = o.OVERALL as Record<string, unknown>
-    if (overall.FY25 && typeof overall.FY25 === 'object') {
-      const fy25 = overall.FY25 as Record<string, Record<string, Record<string, Record<string, number>>>>
-      Object.keys(fy25).forEach((forecastType) => {
-        const forecastData = fy25[forecastType]
-        if (!forecastData || typeof forecastData !== 'object') return
-        Object.keys(forecastData).forEach((period) => {
-          const periodData = forecastData[period]
-          if (!periodData || typeof periodData !== 'object') return
-          Object.keys(periodData).forEach((metric) => {
-            const metricData = periodData[metric]
-            if (!metricData || typeof metricData !== 'object') return
-            Object.keys(metricData).forEach((region) => {
-              const value = metricData[region]
-              if (typeof value === 'number') {
-                rows.push({
-                  Forecast: forecastType,
-                  Period: period,
-                  Metric: `${metric} > ${region}`,
-                  Value: value,
-                })
-              }
-            })
-          })
-        })
-      })
-    }
+  if (Object.keys(o).length === 0) {
+    return { rows: [], hasData: false }
   }
 
-  // TOTAL CHANNEL > FY26 > PREDICTION2 > SEPTEMBER/OCTOBER/NOVEMBER/Q4 > VALUE > LSCO > GLOBAL (Response 2)
-  if (rows.length === 0 && o['TOTAL CHANNEL'] && typeof o['TOTAL CHANNEL'] === 'object') {
-    const tc = o['TOTAL CHANNEL'] as Record<string, unknown>
-    for (const yearKey of Object.keys(tc)) {
-      const yearVal = tc[yearKey]
-      if (!yearVal || typeof yearVal !== 'object') continue
-      const yearObj = yearVal as Record<string, unknown>
-      for (const forecastType of Object.keys(yearObj)) {
-        const forecastData = yearObj[forecastType]
-        if (!forecastData || typeof forecastData !== 'object') continue
-        const forecastObj = forecastData as Record<string, Record<string, unknown>>
-        for (const period of Object.keys(forecastObj)) {
-          const periodData = forecastObj[period]
-          if (!periodData || typeof periodData !== 'object') continue
-          const periodObj = periodData as Record<string, Record<string, unknown>>
-          for (const metric of Object.keys(periodObj)) {
-            const metricData = periodObj[metric]
-            if (!metricData || typeof metricData !== 'object') continue
-            const metricObj = metricData as Record<string, Record<string, unknown>>
-            for (const region of Object.keys(metricObj)) {
-              const regionData = metricObj[region]
-              if (typeof regionData === 'number') {
-                rows.push({
-                  Forecast: forecastType,
-                  Period: period,
-                  Metric: `${metric} > ${region}`,
-                  Value: regionData,
-                })
-              } else if (regionData && typeof regionData === 'object' && !Array.isArray(regionData)) {
-                const regionObj = regionData as Record<string, number>
-                for (const subKey of Object.keys(regionObj)) {
-                  const value = regionObj[subKey]
-                  if (typeof value === 'number') {
-                    rows.push({
-                      Forecast: forecastType,
-                      Period: period,
-                      Metric: `${metric} > ${region} > ${subKey}`,
-                      Value: value,
-                    })
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  const collected: { path: string; value: number }[] = []
+  collectLeafNumbers(o, '', collected)
+
+  if (collected.length === 0) {
+    return { rows: [], hasData: false }
   }
 
-  // TOTAL CHANNEL > FY26 vs FY25 > ACTUAL > Growth > Q4 > Q4_Revenue_FY26 etc > LSCO > GLOBAL (Response 3)
-  if (rows.length === 0 && o['TOTAL CHANNEL'] && typeof o['TOTAL CHANNEL'] === 'object') {
-    const tc = o['TOTAL CHANNEL'] as Record<string, unknown>
-    for (const compareKey of Object.keys(tc)) {
-      const compareVal = tc[compareKey]
-      if (!compareVal || typeof compareVal !== 'object') continue
-      const compareObj = compareVal as Record<string, unknown>
-      for (const actualKey of Object.keys(compareObj)) {
-        const actualVal = compareObj[actualKey]
-        if (!actualVal || typeof actualVal !== 'object') continue
-        const actualObj = actualVal as Record<string, unknown>
-        for (const growthKey of Object.keys(actualObj)) {
-          const growthVal = actualObj[growthKey]
-          if (!growthVal || typeof growthVal !== 'object') continue
-          const growthObj = growthVal as Record<string, Record<string, Record<string, Record<string, number>>>>
-          for (const period of Object.keys(growthObj)) {
-            const periodData = growthObj[period]
-            if (!periodData || typeof periodData !== 'object') continue
-            for (const metric of Object.keys(periodData)) {
-              const metricData = periodData[metric]
-              if (!metricData || typeof metricData !== 'object') continue
-              for (const region of Object.keys(metricData)) {
-                const value = metricData[region]
-                if (typeof value === 'number') {
-                  rows.push({
-                    Forecast: growthKey,
-                    Period: period,
-                    Metric: `${metric} > ${region}`,
-                    Value: value,
-                  })
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  const paths = collected.map(({ path }) => path.split(' > '))
+  const categoryIndex = inferCategorySegmentIndex(paths)
 
-  // Channel-style: EXTERNAL DTC FP&A, EXTERNAL WHLS FP&A, TOTAL CHANNEL > FY26 > ACTUAL > TOTAL > Revenue > LSCO > GLOBAL (one bar per top-level key)
-  if (rows.length === 0) {
-    for (const key of Object.keys(o)) {
-      if (key === 'response') continue
-      const val = o[key]
-      if (!val || typeof val !== 'object' || Array.isArray(val)) continue
-      const num = extractLeafNumber(val as Record<string, unknown>)
-      if (num !== null) {
-        rows.push({
-          Forecast: 'ACTUAL',
-          Period: key,
-          Metric: 'Revenue',
-          Value: num,
-        })
-      }
+  const rows: TableRow[] = collected.map(({ path, value }) => {
+    const parts = path.split(' > ')
+    const period = parts[categoryIndex] ?? '—'
+    const forecast = categoryIndex === 0 ? '—' : (parts[0] ?? '—')
+    const metricParts = parts.filter((_, i) => i !== categoryIndex)
+    const metric = metricParts.length > 0 ? metricParts.join(' > ') : '—'
+    return {
+      Forecast: forecast,
+      Period: period,
+      Metric: metric,
+      Value: value,
     }
-  }
-
-  // Generic fallback: flatten and assign first segment as Forecast, second as Period, rest as Metric
-  if (rows.length === 0) {
-    const collected: { path: string; value: number }[] = []
-    collectLeafNumbers(o, '', collected)
-    for (const { path, value } of collected) {
-      const parts = path.split(' > ')
-      const forecast = parts[0] ?? '—'
-      const period = parts[1] ?? '—'
-      const metric = parts.slice(2).join(' > ') || '—'
-      rows.push({ Forecast: forecast, Period: period, Metric: metric, Value: value })
-    }
-  }
+  })
 
   return {
     rows,
