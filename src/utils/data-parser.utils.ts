@@ -47,12 +47,21 @@ export const isChartableData = (data: unknown): boolean => {
 
   // TOTAL CHANNEL (Response 2: FY26 > PREDICTION2 > periods > VALUE > LSCO > GLOBAL)
   if (o['TOTAL CHANNEL'] && typeof o['TOTAL CHANNEL'] === 'object') {
-    const tc = (o['TOTAL CHANNEL'] as Record<string, unknown>)
+    const tc = o['TOTAL CHANNEL'] as Record<string, unknown>
     for (const key of Object.keys(tc)) {
       const val = tc[key]
       if (val && typeof val === 'object' && !Array.isArray(val)) {
         return true
       }
+    }
+  }
+
+  // Channel-style: EXTERNAL DTC FP&A, EXTERNAL WHLS FP&A, TOTAL CHANNEL > FY26 > ACTUAL > TOTAL > Revenue > LSCO > GLOBAL
+  for (const key of Object.keys(o)) {
+    if (key === 'response') continue
+    const val = o[key]
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      return true
     }
   }
 
@@ -62,6 +71,21 @@ export const isChartableData = (data: unknown): boolean => {
 /** @deprecated Use isChartableData */
 export const isRevenueForecastData = (data: unknown): boolean => {
   return isChartableData(data)
+}
+
+/**
+ * Extract the first leaf number from a nested object (for channel-style single value per key)
+ */
+const extractLeafNumber = (obj: Record<string, unknown>): number | null => {
+  for (const key of Object.keys(obj)) {
+    const val = obj[key]
+    if (typeof val === 'number') return val
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      const nested = extractLeafNumber(val as Record<string, unknown>)
+      if (nested !== null) return nested
+    }
+  }
+  return null
 }
 
 /**
@@ -215,6 +239,24 @@ export const parseResponseData = (output: unknown): ParsedData => {
             }
           }
         }
+      }
+    }
+  }
+
+  // Channel-style: EXTERNAL DTC FP&A, EXTERNAL WHLS FP&A, TOTAL CHANNEL > FY26 > ACTUAL > TOTAL > Revenue > LSCO > GLOBAL (one bar per top-level key)
+  if (rows.length === 0) {
+    for (const key of Object.keys(o)) {
+      if (key === 'response') continue
+      const val = o[key]
+      if (!val || typeof val !== 'object' || Array.isArray(val)) continue
+      const num = extractLeafNumber(val as Record<string, unknown>)
+      if (num !== null) {
+        rows.push({
+          Forecast: 'ACTUAL',
+          Period: key,
+          Metric: 'Revenue',
+          Value: num,
+        })
       }
     }
   }

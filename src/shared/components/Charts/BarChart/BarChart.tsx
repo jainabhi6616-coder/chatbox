@@ -25,30 +25,33 @@ const BarChart = ({ data, containerWidth = 800 }: BarChartProps) => {
 
     d3.select(chartRef.current).selectAll('*').remove()
 
-    const config = getChartDimensions(containerWidth, 1.6)
+    const config = getChartDimensions(containerWidth, 1.6, true)
     const { svg, g } = createSVGContainer(d3.select(chartRef.current), config, 'bar-chart-svg')
 
     const chartData = groupDataByPeriod(data)
 
-    // Create scales
+    // Create scales — higher padding = narrower bars, more space between
     const xScale = d3.scaleBand()
       .domain(chartData.map((d) => d.period))
       .range([0, config.width])
-      .padding(0.3)
+      .padding(0.55)
 
     const yScale = d3.scaleLinear()
       .domain([0, d3.max(chartData, (d) => d.value) || 0])
       .nice()
       .range([config.height, 0])
 
-    // Add X axis
+    // Add X axis — rotate long labels to avoid clipping
     g.append('g')
       .attr('transform', `translate(0,${config.height})`)
       .call(d3.axisBottom(xScale))
       .selectAll('text')
-      .style('text-anchor', 'middle')
       .attr('class', 'chart-axis-text')
-      .style('font-size', '12px')
+      .style('font-size', '11px')
+      .attr('transform', 'rotate(-35)')
+      .style('text-anchor', 'end')
+      .attr('dx', '-0.4em')
+      .attr('dy', '0.5em')
 
     // Add Y axis
     g.append('g')

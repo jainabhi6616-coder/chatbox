@@ -5,17 +5,22 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
   background: var(--color-white);
   border-radius: var(--radius-lg);
+  overflow: visible;
+  box-sizing: border-box;
 }
 
 .bar-chart-svg {
   display: block;
   margin: 0 auto;
+  max-width: 100%;
+  height: auto;
   background: var(--color-white);
   border-radius: var(--radius-md);
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+  overflow: visible;
 }
 
 .chart-bar {

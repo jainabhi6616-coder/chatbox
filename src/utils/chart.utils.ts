@@ -20,16 +20,20 @@ export interface PeriodData {
 
 /**
  * Get responsive chart dimensions
+ * @param barChart - use larger margins and inner padding to avoid clipping and keep bars narrower
  */
 export const getChartDimensions = (
   containerWidth: number,
-  aspectRatio: number = 1.6
+  aspectRatio: number = 1.6,
+  barChart: boolean = false
 ): ChartConfig => {
-  const margin = { top: 40, right: 40, bottom: 60, left: 80 }
+  const margin = barChart
+    ? { top: 50, right: 60, bottom: 70, left: 90 }
+    : { top: 40, right: 40, bottom: 60, left: 80 }
+  const outerPadding = barChart ? 48 : 80
   const maxWidth = 900
   const minWidth = 500
-  
-  const availableWidth = Math.min(maxWidth, Math.max(minWidth, containerWidth - 80))
+  const availableWidth = Math.min(maxWidth, Math.max(minWidth, containerWidth - outerPadding))
   const width = availableWidth - margin.left - margin.right
   const height = width / aspectRatio - margin.top - margin.bottom
 

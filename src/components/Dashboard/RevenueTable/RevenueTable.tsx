@@ -214,13 +214,13 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
         ) : (
           <div ref={chartContainerRef} className="revenue-chart-wrapper">
             {viewType === 'bar' && (
-              <BarChart data={parsed.rows} containerWidth={containerWidth} />
+              <BarChart key="bar" data={parsed.rows} containerWidth={containerWidth} />
             )}
             {viewType === 'line' && (
-              <LineChart data={parsed.rows} containerWidth={containerWidth} />
+              <LineChart key="line" data={parsed.rows} containerWidth={containerWidth} />
             )}
             {viewType === 'pie' && (
-              <PieChart data={parsed.rows} containerWidth={containerWidth} />
+              <PieChart key="pie" data={parsed.rows} containerWidth={containerWidth} />
             )}
           </div>
         )}
