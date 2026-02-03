@@ -40,15 +40,19 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
   }, [])
 
   useEffect(() => {
+    if (viewType !== 'table') return
     if (!tableRef.current || !parsed.hasData) return
 
-    // Clear previous content
     d3.select(tableRef.current).selectAll('*').remove()
-
-    if (viewType === 'table') {
-      renderTable(parsed)
-    }
+    renderTable(parsed)
   }, [parsed, viewType])
+
+  // When switching away from table, ensure table container is cleared (ref may still be set briefly)
+  useEffect(() => {
+    if (viewType !== 'table' && tableRef.current) {
+      d3.select(tableRef.current).selectAll('*').remove()
+    }
+  }, [viewType])
 
   const renderTable = (parsed: ReturnType<typeof parseResponseData>) => {
     if (!tableRef.current) return
@@ -217,12 +221,13 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
           )}
         </div>
       </div>
-      <div className="revenue-table-content-wrapper">
+      <div
+        className={`revenue-table-content-wrapper ${viewType !== 'table' ? 'revenue-table-content-wrapper--chart' : ''}`}
+      >
         {viewType === 'table' ? (
           <div ref={tableRef} className="revenue-table-content" />
         ) : (
           <div ref={chartContainerRef} className="revenue-chart-wrapper">
-            {/* Key forces unmount of previous chart before mounting next — only one graph at a time */}
             <div key={viewType} className="revenue-chart-slot">
               {viewType === 'bar' && (
                 <BarChart data={parsed.rows} containerWidth={containerWidth} />

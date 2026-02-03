@@ -317,6 +317,29 @@
   background: var(--color-white);
 }
 
+/* Chart-only view: single centered chart, no table */
+.revenue-table-content-wrapper--chart {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-xl);
+}
+
+.revenue-table-content-wrapper--chart .revenue-chart-wrapper {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.revenue-table-content-wrapper--chart .revenue-chart-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
 .revenue-table-content {
   width: 100%;
   min-height: 200px;
@@ -340,6 +363,9 @@
 .revenue-chart-slot {
   width: 100%;
   overflow: visible;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .chart-title {
