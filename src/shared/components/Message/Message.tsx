@@ -1,9 +1,8 @@
-import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react'
+import { memo, useMemo, useState, useCallback } from 'react'
 import { Message as MessageType } from '../../../interfaces'
 import { formatMessageTime } from '../../../utils'
-import { parseResponseData, isChartableData } from '../../../utils/data-parser.utils'
+import { parseResponseData, isChartableData, formatNumber } from '../../../utils/data-parser.utils'
 import { useToast } from '../../../contexts/ToastContext'
-import { BarChart } from '../Charts'
 import './Message.css'
 
 interface MessageProps {
@@ -14,8 +13,6 @@ interface MessageProps {
 
 const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => {
   const [copied, setCopied] = useState(false)
-  const chartWrapRef = useRef<HTMLDivElement>(null)
-  const [chartWidth, setChartWidth] = useState(320)
   const { showToast } = useToast()
   const isUserMessage = message.sender === 'user'
   const formattedTime = useMemo(
@@ -24,20 +21,10 @@ const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => 
   )
 
   const hasChartableData = message.rawData != null && isChartableData(message.rawData)
-  const chartData = useMemo(() => {
+  const tableData = useMemo(() => {
     if (!message.rawData) return parseResponseData(null)
     return parseResponseData(message.rawData)
   }, [message.rawData])
-
-  useEffect(() => {
-    if (!hasChartableData || !chartWrapRef.current) return
-    const el = chartWrapRef.current
-    const update = () => setChartWidth(Math.min(el.offsetWidth || 320, 420))
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [hasChartableData])
 
   const messageText = typeof message.text === 'string' ? message.text : String(message.text || '')
 
@@ -55,15 +42,44 @@ const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => 
 
   const isError = showRetry && message.sender === 'bot' && messageText.toLowerCase().includes('error')
 
+  const sortedRows = useMemo(() => {
+    if (!tableData.hasData) return []
+    return [...tableData.rows].sort((a, b) => {
+      if (a.Forecast !== b.Forecast) return a.Forecast.localeCompare(b.Forecast)
+      return a.Period.localeCompare(b.Period)
+    })
+  }, [tableData])
+
   return (
     <div
       className={`message ${isUserMessage ? 'user-message' : 'bot-message'} ${isError ? 'message-error' : ''}`}
     >
       <div className="message-content">
-        {hasChartableData && chartData.hasData ? (
-          <div className="message-chart-wrap" ref={chartWrapRef}>
-            <p className="message-chart-label">{messageText}</p>
-            <BarChart data={chartData.rows} containerWidth={chartWidth} />
+        {hasChartableData && tableData.hasData ? (
+          <div className="message-table-wrap">
+            <p className="message-table-label">{messageText}</p>
+            <div className="message-table-scroll">
+              <table className="message-data-table" role="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Forecast</th>
+                    <th scope="col">Period</th>
+                    <th scope="col">Metric</th>
+                    <th scope="col">Value (USD)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRows.map((row, i) => (
+                    <tr key={`${row.Period}-${row.Forecast}-${i}`}>
+                      <td>{row.Forecast}</td>
+                      <td>{row.Period}</td>
+                      <td>{row.Metric}</td>
+                      <td className="message-table-value">${formatNumber(row.Value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <p>{messageText}</p>
@@ -98,7 +114,7 @@ const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => 
                 </svg>
               ) : (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" fill="currentColor"/>
+                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
                 </svg>
               )}
             </button>

@@ -334,6 +334,12 @@
   justify-content: center;
   align-items: center;
   background: linear-gradient(to bottom, var(--color-gray-50) 0%, var(--color-white) 100%);
+  overflow: visible;
+}
+
+.revenue-chart-slot {
+  width: 100%;
+  overflow: visible;
 }
 
 .chart-title {

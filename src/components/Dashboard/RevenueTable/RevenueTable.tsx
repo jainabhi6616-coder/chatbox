@@ -222,15 +222,18 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
           <div ref={tableRef} className="revenue-table-content" />
         ) : (
           <div ref={chartContainerRef} className="revenue-chart-wrapper">
-            {viewType === 'bar' && (
-              <BarChart key="bar" data={parsed.rows} containerWidth={containerWidth} />
-            )}
-            {viewType === 'line' && (
-              <LineChart key="line" data={parsed.rows} containerWidth={containerWidth} />
-            )}
-            {viewType === 'pie' && (
-              <PieChart key="pie" data={parsed.rows} containerWidth={containerWidth} />
-            )}
+            {/* Key forces unmount of previous chart before mounting next — only one graph at a time */}
+            <div key={viewType} className="revenue-chart-slot">
+              {viewType === 'bar' && (
+                <BarChart data={parsed.rows} containerWidth={containerWidth} />
+              )}
+              {viewType === 'line' && (
+                <LineChart data={parsed.rows} containerWidth={containerWidth} />
+              )}
+              {viewType === 'pie' && (
+                <PieChart data={parsed.rows} containerWidth={containerWidth} />
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -113,34 +113,44 @@ const BarChart = ({ data, containerWidth = 800 }: BarChartProps) => {
       }
     })
 
-    // Add hover effects
+    // Add hover effects — tooltip with dynamic width so long names don't get cut
     bars.on('mouseenter', function(_event, d) {
       d3.select(this)
         .attr('fill', CHART_COLORS.primaryDark)
         .attr('transform', 'scale(1.05)')
         .attr('transform-origin', 'center bottom')
 
-      // Show tooltip
+      const label = `${d.period}: ${formatValueForChart(d.value)}`
+      const pad = 14
+      const minW = 90
+      const maxW = Math.min(320, config.width - pad * 2)
+      const approxWidth = Math.min(Math.max(label.length * 6.5, minW), maxW)
+
+      const barCenter = (xScale(d.period) || 0) + xScale.bandwidth() / 2
+      let tipX = barCenter - approxWidth / 2
+      tipX = Math.max(pad, Math.min(config.width - approxWidth - pad, tipX))
+      const tipY = Math.max(24, yScale(d.value) - 38)
+
       const tooltip = g.append('g')
         .attr('class', 'chart-tooltip')
         .attr('opacity', 0)
 
       tooltip.append('rect')
-        .attr('x', (xScale(d.period) || 0) + xScale.bandwidth() / 2 - 50)
-        .attr('y', yScale(d.value) - 40)
-        .attr('width', 100)
+        .attr('x', tipX)
+        .attr('y', tipY)
+        .attr('width', approxWidth)
         .attr('height', 30)
         .attr('fill', '#1f2937')
         .attr('rx', 4)
 
       tooltip.append('text')
-        .attr('x', (xScale(d.period) || 0) + xScale.bandwidth() / 2)
-        .attr('y', yScale(d.value) - 20)
+        .attr('x', tipX + approxWidth / 2)
+        .attr('y', tipY + 19)
         .attr('text-anchor', 'middle')
         .attr('fill', '#ffffff')
-        .attr('font-size', '12px')
+        .attr('font-size', '11px')
         .attr('font-weight', '600')
-        .text(`${d.period}: ${formatValueForChart(d.value)}`)
+        .text(label)
 
       tooltip.transition()
         .duration(200)
