@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import * as d3 from 'd3'
 import { parseResponseData, formatNumber } from '../../../utils/data-parser.utils'
-import { exportToCSV, exportToJSON } from '../../../utils/export.utils'
+import { APP_CONFIG } from '../../../config/app.config'
 import { BarChart, LineChart, PieChart } from '../../../shared/components/Charts'
 import './RevenueTable.css'
 
@@ -16,8 +16,9 @@ interface RevenueTableProps {
 const RevenueTable = ({ data, title }: RevenueTableProps) => {
   const tableRef = useRef<HTMLDivElement>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
-  const [viewType, setViewType] = useState<ViewType>('bar')
+  const [viewType, setViewType] = useState<ViewType>('table')
   const [containerWidth, setContainerWidth] = useState(800)
+  const [downloadLoading, setDownloadLoading] = useState(false)
 
   // Parse data once
   const parsed = useMemo(() => {
@@ -131,17 +132,32 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
     setViewType(e.target.value as ViewType)
   }
 
-  const handleExportCSV = () => {
-    if (parsed.hasData) {
-      exportToCSV(parsed.rows, 'revenue-data.csv')
+  const handleDownload = useCallback(async () => {
+    if (data == null) return
+    setDownloadLoading(true)
+    try {
+      const res = await fetch(APP_CONFIG.DOWNLOAD_EXCEL_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ output: data }),
+      })
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`)
+      const blob = await res.blob()
+      const disposition = res.headers.get('Content-Disposition')
+      const match = disposition?.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+      const filename = match?.[1]?.replace(/['"]/g, '') || 'download.xlsx'
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Download error:', err)
+    } finally {
+      setDownloadLoading(false)
     }
-  }
-
-  const handleExportJSON = () => {
-    if (parsed.hasData) {
-      exportToJSON(parsed.rows, 'revenue-data.json')
-    }
-  }
+  }, [data])
 
   if (!parsed.hasData) {
     return (
@@ -178,31 +194,24 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
               <option value="pie">Pie Chart</option>
             </select>
           </div>
-          {parsed.hasData && viewType === 'table' && (
-            <div className="revenue-table-export-buttons">
+          {parsed.hasData && (
+            <div className="revenue-table-download-wrap">
               <button
-                className="revenue-table-export-btn"
-                onClick={handleExportCSV}
-                aria-label="Export to CSV"
-                title="Export to CSV"
+                className="revenue-table-download-btn"
+                onClick={handleDownload}
+                disabled={downloadLoading}
+                aria-label="Download Excel"
+                title="Download Excel"
                 type="button"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
-                </svg>
-                CSV
-              </button>
-              <button
-                className="revenue-table-export-btn"
-                onClick={handleExportJSON}
-                aria-label="Export to JSON"
-                title="Export to JSON"
-                type="button"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
-                </svg>
-                JSON
+                {downloadLoading ? (
+                  <span className="revenue-table-download-spinner" aria-hidden />
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+                Download
               </button>
             </div>
           )}

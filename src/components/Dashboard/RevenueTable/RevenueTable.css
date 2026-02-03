@@ -55,43 +55,63 @@
   gap: var(--spacing-md);
 }
 
-.revenue-table-export-buttons {
+.revenue-table-download-wrap {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
   padding-left: var(--spacing-lg);
   border-left: 1px solid var(--color-border-medium);
 }
 
-.revenue-table-export-btn {
+.revenue-table-download-btn {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-white);
   border: 1px solid var(--color-border-medium);
   border-radius: var(--radius-sm);
   color: var(--color-gray-700);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all var(--transition-base);
 }
 
-.revenue-table-export-btn:hover {
+.revenue-table-download-btn:hover:not(:disabled) {
   background: var(--color-gray-50);
   border-color: var(--color-primary);
   color: var(--color-primary);
   transform: translateY(-1px);
 }
 
-.revenue-table-export-btn:active {
+.revenue-table-download-btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.revenue-table-export-btn svg {
-  width: 14px;
-  height: 14px;
+.revenue-table-download-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.revenue-table-download-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.revenue-table-download-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border-medium);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: revenue-download-spin 0.7s linear infinite;
+}
+
+@keyframes revenue-download-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .revenue-table-label {
