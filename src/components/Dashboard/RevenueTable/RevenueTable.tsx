@@ -40,19 +40,20 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
   }, [])
 
   useEffect(() => {
-    if (viewType !== 'table') return
+    // Clear table content when switching away from table view
+    if (viewType !== 'table') {
+      if (tableRef.current) {
+        d3.select(tableRef.current).selectAll('*').remove()
+      }
+      return
+    }
+
+    // Render table only when viewType is 'table'
     if (!tableRef.current || !parsed.hasData) return
 
     d3.select(tableRef.current).selectAll('*').remove()
     renderTable(parsed)
   }, [parsed, viewType])
-
-  // When switching away from table, ensure table container is cleared (ref may still be set briefly)
-  useEffect(() => {
-    if (viewType !== 'table' && tableRef.current) {
-      d3.select(tableRef.current).selectAll('*').remove()
-    }
-  }, [viewType])
 
   const renderTable = (parsed: ReturnType<typeof parseResponseData>) => {
     if (!tableRef.current) return
@@ -225,9 +226,9 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
         className={`revenue-table-content-wrapper ${viewType !== 'table' ? 'revenue-table-content-wrapper--chart' : ''}`}
       >
         {viewType === 'table' ? (
-          <div ref={tableRef} className="revenue-table-content" />
+          <div key="table-view" ref={tableRef} className="revenue-table-content" />
         ) : (
-          <div ref={chartContainerRef} className="revenue-chart-wrapper">
+          <div key="chart-view" ref={chartContainerRef} className="revenue-chart-wrapper">
             <div key={viewType} className="revenue-chart-slot">
               {viewType === 'bar' && (
                 <BarChart data={parsed.rows} containerWidth={containerWidth} />
