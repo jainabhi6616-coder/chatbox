@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
 import { ChatHeader, MessagesList, ChatInput, SuggestedQuestions } from '../../shared/components'
 import { useChatbot } from '../../hooks'
+import { useAccount } from '../../contexts/AccountContext'
 import './Chatbot.css'
 
 interface ChatbotProps {
@@ -23,6 +24,7 @@ const Chatbot = memo(({ isMinimized = false, onClose, onMinimize, onRestore }: C
     lastError,
     handleRetry,
   } = useChatbot()
+  const { account, setAccount, accountOptions } = useAccount()
 
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -72,6 +74,24 @@ const Chatbot = memo(({ isMinimized = false, onClose, onMinimize, onRestore }: C
         />
         {!isMinimized && (
           <>
+            <div className="chatbot-account-row">
+              <label htmlFor="chatbot-account-select" className="chatbot-account-label">
+                Account
+              </label>
+              <select
+                id="chatbot-account-select"
+                className="chatbot-account-select"
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                aria-label="Select account"
+              >
+                {accountOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
             <MessagesList 
               messages={messages} 
               messagesEndRef={messagesEndRef}

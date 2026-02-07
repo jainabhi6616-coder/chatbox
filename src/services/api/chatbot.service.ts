@@ -5,10 +5,9 @@
 
 import type { ChatResponse } from '../graphql/types'
 import { APP_CONFIG } from '../../config/app.config'
-import { cacheService } from '../cache/cache.service'
 import { conversationService } from '../conversation/conversation.service'
-import { processApiResponse } from '../../utils/response.utils'
-import type { ApiRequest, ApiResponse } from '../../types/api.types'
+import { processApiResponse, extractAssistantMessage, extractRawData } from '../../utils/response.utils'
+import type { ApiMessage, ApiRequest, ApiResponse } from '../../types/api.types'
 
 /**
  * Create a ChatResponse from API response data
@@ -38,13 +37,14 @@ const createChatResponse = (
  */
 const callPythonEndpoint = async (
   query: string,
-  conversationId?: string
+  conversationId?: string,
+  account?: string
 ): Promise<ChatResponse> => {
   const conversationIdKey = conversationId || 'default'
   const messages = conversationService.buildMessages(conversationIdKey, query)
 
   const requestBody: ApiRequest = {
-    Account: APP_CONFIG.ACCOUNT_TYPE,
+    Account: account ?? APP_CONFIG.ACCOUNT_TYPE,
     messages,
   }
 
@@ -76,6 +76,18 @@ const callPythonEndpoint = async (
     throw new Error('Invalid API response: empty body')
   }
 
+  // Extract previous response output for next request (user msg + output in messages)
+  let lastMessage: ApiMessage | null = null
+  try {
+    if (data.messages && Array.isArray(data.messages)) {
+      lastMessage = extractAssistantMessage(data)
+    }
+  } catch {
+    // No assistant message in response; use top-level output only
+  }
+  const responseOutput = extractRawData(data, lastMessage ?? undefined)
+  conversationService.appendTurn(conversationIdKey, query, responseOutput ?? undefined)
+
   // Top-level output format (output + suggested_questions)
   if (data.output !== undefined) {
     return createChatResponse(data, query, conversationId)
@@ -85,7 +97,6 @@ const callPythonEndpoint = async (
   if (!data.messages || !Array.isArray(data.messages)) {
     throw new Error('Invalid API response: missing or invalid messages array')
   }
-  conversationService.updateHistory(conversationIdKey, data.messages)
   return createChatResponse(data, query, conversationId)
 }
 
@@ -134,44 +145,20 @@ const callPythonViaGraphQL = async (
  */
 export const getChatbotResponse = async (
   query: string,
-  conversationId?: string
+  conversationId?: string,
+  account?: string
 ): Promise<ChatResponse> => {
-  // Check cache first
-  const cached = cacheService.get(query)
-  if (cached) {
-    console.log('Using cached response for:', query)
-    return cached
-  }
-
-  let response: ChatResponse
-
   if (APP_CONFIG.USE_GRAPHQL) {
-    // Call through GraphQL middleware
-    response = await callPythonViaGraphQL(query, conversationId)
-  } else {
-    // Call Python endpoint directly
-    response = await callPythonEndpoint(query, conversationId)
+    return callPythonViaGraphQL(query, conversationId)
   }
-
-  // Store in cache only if successful
-  cacheService.set(query, response)
-
-  return response
+  return callPythonEndpoint(query, conversationId, account)
 }
 
 /**
- * Clear the local cache
+ * Clear in-memory conversation history (and any local state) for a fresh start
  */
 export const clearCache = (): void => {
-  cacheService.clear()
   conversationService.clear()
-}
-
-/**
- * Clear cache for a specific query
- */
-export const clearCacheForQuery = (query: string): void => {
-  cacheService.clearForQuery(query)
 }
 
 /**
@@ -179,13 +166,6 @@ export const clearCacheForQuery = (query: string): void => {
  */
 export const clearConversationHistory = (conversationId?: string): void => {
   conversationService.clear(conversationId)
-}
-
-/**
- * Get cache statistics
- */
-export const getCacheStats = () => {
-  return cacheService.getStats()
 }
 
 /** Response from execute_suggestion: output and optional suggested_questions */
@@ -197,10 +177,13 @@ export interface ExecuteSuggestionResponse {
 /**
  * Call execute_suggestion API to get tab data (content = tab information value)
  */
-export const executeSuggestion = async (content: string): Promise<unknown | null> => {
+export const executeSuggestion = async (
+  content: string,
+  account?: string
+): Promise<unknown | null> => {
   const requestBody = {
-    Account: APP_CONFIG.ACCOUNT_TYPE,
-    question:  content ,
+    Account: account ?? APP_CONFIG.ACCOUNT_TYPE,
+    question: content,
   }
 
   const response = await fetch(APP_CONFIG.EXECUTE_SUGGESTION_ENDPOINT, {

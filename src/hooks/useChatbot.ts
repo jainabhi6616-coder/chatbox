@@ -9,6 +9,7 @@ import { DEFAULT_SUGGESTED_QUESTIONS } from '../constants'
 import { getChatbotResponse, clearConversationHistory } from '../services'
 import { useRevenueData } from '../contexts/RevenueDataContext'
 import { useDashboard } from '../contexts/DashboardContext'
+import { useAccount } from '../contexts/AccountContext'
 import { useToast } from '../contexts/ToastContext'
 import {
   saveMessagesToStorage,
@@ -43,6 +44,7 @@ export const useChatbot = () => {
   const conversationIdRef = useRef<string>(storedConversationId || Date.now().toString())
   const { setRevenueData } = useRevenueData()
   const { setTabsAndFetchData, clearDashboard } = useDashboard()
+  const { account } = useAccount()
   const { showToast } = useToast()
 
   // Save messages to localStorage whenever they change
@@ -74,7 +76,8 @@ export const useChatbot = () => {
       // Call GraphQL API which integrates with Python backend
       const response = await getChatbotResponse(
         textToSend,
-        conversationIdRef.current
+        conversationIdRef.current,
+        account
       )
 
       const botMessage: Message = {
@@ -123,7 +126,7 @@ export const useChatbot = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [inputValue, isLoading, showToast, setRevenueData, setTabsAndFetchData])
+  }, [inputValue, isLoading, showToast, setRevenueData, setTabsAndFetchData, account])
 
   const handleRetry = useCallback(() => {
     if (lastError) {

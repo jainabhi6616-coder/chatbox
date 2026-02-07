@@ -37,6 +37,25 @@ class ConversationService {
   }
 
   /**
+   * Append a completed turn to history: the user message and, when present, the previous response output
+   * so the next request sends [ ...history, userMsg, { output }, newUserMsg ].
+   */
+  appendTurn(conversationId: string, userContent: string, responseOutput?: unknown): void {
+    const history = this.getHistory(conversationId)
+    history.push({
+      role: 'user',
+      content: userContent,
+    })
+    if (responseOutput !== undefined && responseOutput !== null) {
+      history.push({
+        role: 'user',
+        content: { output: responseOutput },
+      })
+    }
+    this.history.set(conversationId, history)
+  }
+
+  /**
    * Clear conversation history for a specific conversation
    */
   clear(conversationId?: string): void {
