@@ -74,17 +74,9 @@ const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => 
   const isError = showRetry && message.sender === 'bot' && messageText.toLowerCase().includes('error')
 
   const valueCol = 'Value (USD)'
-  const sortedRows = useMemo(() => {
+  const rows = useMemo(() => {
     if (!tableData.hasData || !tableData.headers.length) return []
-    return [...tableData.rows].sort((a, b) => {
-      for (const h of tableData.headers) {
-        if (h === valueCol) continue
-        const va = String(a[h] ?? '')
-        const vb = String(b[h] ?? '')
-        if (va !== vb) return va.localeCompare(vb)
-      }
-      return 0
-    })
+    return tableData.rows
   }, [tableData])
 
   return (
@@ -107,7 +99,7 @@ const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => 
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedRows.map((row, i) => (
+                  {rows.map((row, i) => (
                     <tr key={`${i}-${String(row[tableData.headers[0]])}`}>
                       {tableData.headers.map((h) => (
                         <td

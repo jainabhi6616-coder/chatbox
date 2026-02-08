@@ -36,18 +36,9 @@ const MessageTable = ({ data }: MessageTableProps) => {
 
     const tbody = table.append('tbody')
     const valueCol = 'Value (USD)'
-    const sortedRows = [...parsed.rows].sort((a, b) => {
-      for (const h of parsed.headers) {
-        if (h === valueCol) continue
-        const va = String(a[h] ?? '')
-        const vb = String(b[h] ?? '')
-        if (va !== vb) return va.localeCompare(vb)
-      }
-      return 0
-    })
 
     const rows = tbody.selectAll('tr')
-      .data(sortedRows)
+      .data(parsed.rows)
       .enter()
       .append('tr')
       .attr('class', 'message-table-row')
