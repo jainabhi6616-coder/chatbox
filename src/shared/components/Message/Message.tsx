@@ -1,7 +1,7 @@
 import { memo, useMemo, useState, useCallback } from 'react'
 import { Message as MessageType } from '../../../interfaces'
 import { formatMessageTime } from '../../../utils'
-import { parseResponseData, isChartableData, formatNumber } from '../../../utils/data-parser.utils'
+import { parseResponseData, isChartableData, formatValueCell } from '../../../utils/data-parser.utils'
 import { useToast } from '../../../contexts/ToastContext'
 import { APP_CONFIG } from '../../../config/app.config'
 import './Message.css'
@@ -107,7 +107,7 @@ const Message = memo(({ message, onRetry, showRetry = false }: MessageProps) => 
                           className={h === valueCol ? 'message-table-value' : ''}
                         >
                           {h === valueCol && typeof row[h] === 'number'
-                            ? `$${formatNumber(row[h] as number)}`
+                            ? formatValueCell(row[h] as number, row['Metric'])
                             : String(row[h] ?? '—')}
                         </td>
                       ))}

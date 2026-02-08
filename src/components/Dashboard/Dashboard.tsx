@@ -10,9 +10,9 @@ import { useDashboard } from '../../contexts/DashboardContext'
 import './Dashboard.css'
 
 const DEFAULT_TABS = [
-  { id: '1', label: 'US Sales Deep Dive' },
-  { id: '2', label: 'US Sales at Product Level' },
-  { id: '3', label: 'US Sales Growth Trend' },
+  { id: '1', label: 'Sales Deep Dive' },
+  { id: '2', label: 'Product & Channel Level' },
+  { id: '3', label: 'Growth Level' },
 ] as const
 
 const Dashboard = () => {
@@ -81,7 +81,7 @@ const Dashboard = () => {
             ) : (
               <EmptyState
                 title={currentTabLabel ? `No data for ${currentTabLabel}` : 'No data'}
-                message="Start a conversation in the chatbot. Tabs and data will update from the API response and execute_suggestion."
+                message="Start a conversation in the chatbot."
               />
             )}
           </div>

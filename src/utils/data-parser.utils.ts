@@ -156,3 +156,14 @@ export const formatNumber = (value: number): string => {
     maximumFractionDigits: 2,
   }).format(value)
 }
+
+/**
+ * Format value for table display: use % if Metric contains "Percentage", otherwise $.
+ */
+export const formatValueCell = (value: number, metric?: string | number | null): string => {
+  const metricStr = metric != null ? String(metric) : ''
+  if (metricStr.toLowerCase().includes('percentage')) {
+    return `${formatNumber(value)}%`
+  }
+  return `$${formatNumber(value)}`
+}

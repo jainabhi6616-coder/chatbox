@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import * as d3 from 'd3'
-import { parseResponseData, formatNumber, getChartRows } from '../../../utils/data-parser.utils'
+import { parseResponseData, formatValueCell, getChartRows } from '../../../utils/data-parser.utils'
 import { APP_CONFIG } from '../../../config/app.config'
 import { BarChart, LineChart, PieChart } from '../../../shared/components/Charts'
 import './RevenueTable.css'
@@ -96,7 +96,9 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
       rows.append('td')
         .text((d) => {
           const v = d[header]
-          if (header === valueCol && typeof v === 'number') return `$${formatNumber(v)}`
+          if (header === valueCol && typeof v === 'number') {
+            return formatValueCell(v, d['Metric'])
+          }
           return String(v ?? '—')
         })
         .attr('class', `revenue-table-cell revenue-table-cell--${header.toLowerCase().replace(/\s+/g, '-')}`)

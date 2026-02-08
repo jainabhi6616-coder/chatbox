@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
-import { parseResponseData, formatNumber } from '../../../utils/data-parser.utils'
+import { parseResponseData, formatValueCell } from '../../../utils/data-parser.utils'
 import './MessageTable.css'
 
 interface MessageTableProps {
@@ -47,7 +47,9 @@ const MessageTable = ({ data }: MessageTableProps) => {
       rows.append('td')
         .text((d) => {
           const v = d[header]
-          if (header === valueCol && typeof v === 'number') return `$${formatNumber(v)}`
+          if (header === valueCol && typeof v === 'number') {
+            return formatValueCell(v, d['Metric'])
+          }
           return String(v ?? '—')
         })
         .attr('class', 'message-table-cell')

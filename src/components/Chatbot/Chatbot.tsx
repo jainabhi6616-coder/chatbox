@@ -78,19 +78,21 @@ const Chatbot = memo(({ isMinimized = false, onClose, onMinimize, onRestore }: C
               <label htmlFor="chatbot-account-select" className="chatbot-account-label">
                 Account
               </label>
-              <select
-                id="chatbot-account-select"
-                className="chatbot-account-select"
-                value={account}
-                onChange={(e) => setAccount(e.target.value)}
-                aria-label="Select account"
-              >
-                {accountOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
+              <div className="chatbot-account-select-wrap">
+                <select
+                  id="chatbot-account-select"
+                  className="chatbot-account-select"
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  aria-label="Select account"
+                >
+                  {accountOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <MessagesList 
               messages={messages} 
