@@ -107,6 +107,10 @@
   background: rgba(0, 0, 0, 0.03);
 }
 
+.message-table-th-value {
+  text-align: right;
+}
+
 .message-table-value {
   text-align: right !important;
   font-weight: 600;
@@ -191,6 +195,58 @@
 
 .message-copy-button:active {
   transform: scale(0.95);
+}
+
+.message-download-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: all var(--transition-base);
+  color: inherit;
+}
+
+.message-download-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.message:hover .message-download-button:not(:disabled) {
+  opacity: 0.7;
+}
+
+.message-download-button:hover:not(:disabled) {
+  opacity: 1 !important;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.user-message .message-download-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.message-download-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.message-download-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: message-download-spin 0.7s linear infinite;
+}
+
+@keyframes message-download-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {

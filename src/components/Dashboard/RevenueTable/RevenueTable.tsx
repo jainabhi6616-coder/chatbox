@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import * as d3 from 'd3'
-import { parseResponseData, formatNumber } from '../../../utils/data-parser.utils'
+import { parseResponseData, formatNumber, getChartRows } from '../../../utils/data-parser.utils'
 import { APP_CONFIG } from '../../../config/app.config'
 import { BarChart, LineChart, PieChart } from '../../../shared/components/Charts'
 import './RevenueTable.css'
@@ -22,9 +22,11 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
 
   // Parse data once
   const parsed = useMemo(() => {
-    if (!data) return { rows: [], hasData: false }
+    if (!data) return { rows: [], headers: [], hasData: false }
     return parseResponseData(data)
   }, [data])
+
+  const chartRows = useMemo(() => getChartRows(parsed), [parsed])
 
   // Update container width on resize
   useEffect(() => {
@@ -56,46 +58,41 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
   }, [parsed, viewType])
 
   const renderTable = (parsed: ReturnType<typeof parseResponseData>) => {
-    if (!tableRef.current) return
+    if (!tableRef.current || !parsed.headers.length) return
 
-    // Create wrapper for table
     const wrapper = d3.select(tableRef.current)
       .append('div')
       .attr('class', 'revenue-table-wrapper')
 
-    // Create table
     const table = wrapper
       .append('table')
       .attr('class', 'revenue-table')
 
-    // Create header
     const thead = table.append('thead')
-    const headerRow = thead.append('tr')
-      .attr('role', 'row')
-    
-    const columns = ['Forecast', 'Period', 'Metric', 'Value (USD)']
+    const headerRow = thead.append('tr').attr('role', 'row')
+
     const headerCells = headerRow.selectAll('th')
-      .data(columns)
+      .data(parsed.headers)
       .enter()
       .append('th')
       .text((d) => d)
       .attr('class', 'revenue-table-header')
       .attr('scope', 'col')
       .attr('role', 'columnheader')
-    
-    // Right align the Value column header
-    headerCells.filter((d) => d === 'Value (USD)')
-      .style('text-align', 'right')
 
-    // Create body
+    headerCells.filter((d) => d === 'Value (USD)').style('text-align', 'right')
+
     const tbody = table.append('tbody')
-    
-    // Sort rows by Forecast, then Period
+    const valueCol = 'Value (USD)'
+
     const sortedRows = [...parsed.rows].sort((a, b) => {
-      if (a.Forecast !== b.Forecast) {
-        return a.Forecast.localeCompare(b.Forecast)
+      for (const h of parsed.headers) {
+        if (h === valueCol) continue
+        const va = String(a[h] ?? '')
+        const vb = String(b[h] ?? '')
+        if (va !== vb) return va.localeCompare(vb)
       }
-      return a.Period.localeCompare(b.Period)
+      return 0
     })
 
     const rows = tbody.selectAll('tr')
@@ -105,30 +102,21 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
       .attr('class', 'revenue-table-row')
       .attr('role', 'row')
 
-    // Add cells
-    rows.append('td')
-      .text((d) => d.Forecast)
-      .attr('class', 'revenue-table-cell forecast-cell')
-
-    rows.append('td')
-      .text((d) => d.Period)
-      .attr('class', 'revenue-table-cell period-cell')
-
-    rows.append('td')
-      .text((d) => d.Metric)
-      .attr('class', 'revenue-table-cell metric-cell')
-
-    rows.append('td')
-      .text((d) => `$${formatNumber(d.Value)}`)
-      .attr('class', 'revenue-table-cell value-cell')
-      .style('text-align', 'right')
-      .style('font-weight', '600')
-
-    // Add hover effect
-    rows.on('mouseenter', function() {
-      d3.select(this).classed('revenue-table-row-hover', true)
+    parsed.headers.forEach((header) => {
+      rows.append('td')
+        .text((d) => {
+          const v = d[header]
+          if (header === valueCol && typeof v === 'number') return `$${formatNumber(v)}`
+          return String(v ?? '—')
+        })
+        .attr('class', `revenue-table-cell revenue-table-cell--${header.toLowerCase().replace(/\s+/g, '-')}`)
+        .style('text-align', header === valueCol ? 'right' : 'left')
+        .style('font-weight', header === valueCol ? '600' : '')
     })
-    .on('mouseleave', function() {
+
+    rows.on('mouseenter', function () {
+      d3.select(this).classed('revenue-table-row-hover', true)
+    }).on('mouseleave', function () {
       d3.select(this).classed('revenue-table-row-hover', false)
     })
   }
@@ -231,13 +219,13 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
           <div key="chart-view" ref={chartContainerRef} className="revenue-chart-wrapper">
             <div key={viewType} className="revenue-chart-slot">
               {viewType === 'bar' && (
-                <BarChart data={parsed.rows} containerWidth={containerWidth} />
+                <BarChart data={chartRows} containerWidth={containerWidth} />
               )}
               {viewType === 'line' && (
-                <LineChart data={parsed.rows} containerWidth={containerWidth} />
+                <LineChart data={chartRows} containerWidth={containerWidth} />
               )}
               {viewType === 'pie' && (
-                <PieChart data={parsed.rows} containerWidth={containerWidth} />
+                <PieChart data={chartRows} containerWidth={containerWidth} />
               )}
             </div>
           </div>

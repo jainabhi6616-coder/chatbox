@@ -16,43 +16,34 @@ const MessageTable = ({ data }: MessageTableProps) => {
     // Clear previous content
     d3.select(tableRef.current).selectAll('*').remove()
 
-    // Parse the data
     const parsed = parseResponseData(data)
-    
-    if (!parsed.hasData) {
-      return
-    }
+    if (!parsed.hasData || !parsed.headers.length) return
 
-    // Create table container
     const container = d3.select(tableRef.current)
       .append('div')
       .attr('class', 'message-table-wrapper')
 
-    // Create table
-    const table = container.append('table')
-      .attr('class', 'message-table')
-
-    // Create header
+    const table = container.append('table').attr('class', 'message-table')
     const thead = table.append('thead')
     const headerRow = thead.append('tr')
-    
-    const columns = ['Forecast', 'Period', 'Metric', 'Value (USD)']
+
     headerRow.selectAll('th')
-      .data(columns)
+      .data(parsed.headers)
       .enter()
       .append('th')
       .text((d) => d)
       .attr('class', 'message-table-header')
 
-    // Create body
     const tbody = table.append('tbody')
-    
-    // Sort rows by Forecast, then Period
+    const valueCol = 'Value (USD)'
     const sortedRows = [...parsed.rows].sort((a, b) => {
-      if (a.Forecast !== b.Forecast) {
-        return a.Forecast.localeCompare(b.Forecast)
+      for (const h of parsed.headers) {
+        if (h === valueCol) continue
+        const va = String(a[h] ?? '')
+        const vb = String(b[h] ?? '')
+        if (va !== vb) return va.localeCompare(vb)
       }
-      return a.Period.localeCompare(b.Period)
+      return 0
     })
 
     const rows = tbody.selectAll('tr')
@@ -61,24 +52,17 @@ const MessageTable = ({ data }: MessageTableProps) => {
       .append('tr')
       .attr('class', 'message-table-row')
 
-    // Add cells
-    rows.append('td')
-      .text((d) => d.Forecast)
-      .attr('class', 'message-table-cell forecast-cell')
-
-    rows.append('td')
-      .text((d) => d.Period)
-      .attr('class', 'message-table-cell period-cell')
-
-    rows.append('td')
-      .text((d) => d.Metric)
-      .attr('class', 'message-table-cell metric-cell')
-
-    rows.append('td')
-      .text((d) => `$${formatNumber(d.Value)}`)
-      .attr('class', 'message-table-cell value-cell')
-      .style('text-align', 'right')
-      .style('font-weight', '600')
+    parsed.headers.forEach((header) => {
+      rows.append('td')
+        .text((d) => {
+          const v = d[header]
+          if (header === valueCol && typeof v === 'number') return `$${formatNumber(v)}`
+          return String(v ?? '—')
+        })
+        .attr('class', 'message-table-cell')
+        .style('text-align', header === valueCol ? 'right' : 'left')
+        .style('font-weight', header === valueCol ? '600' : '')
+    })
 
   }, [data])
 

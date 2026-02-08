@@ -1,8 +1,11 @@
 /**
  * Parse nested response data into flat table structure.
- * Structure-agnostic: works for any key names by inferring layout from paths to numeric leaves.
+ * Supports API structures:
+ *   Channel → Year → Scenario → Period → Metric → Profit Center → Cluster → value
+ *   Channel → Year → Scenario → Classification → Period → Metric → Profit Center → Cluster → value
  */
 
+/** Legacy row shape for charts (Period + Value); derived from structured rows when needed */
 export interface TableRow {
   Forecast: string
   Period: string
@@ -10,10 +13,23 @@ export interface TableRow {
   Value: number
 }
 
+/** Structured row: dynamic keys per API (Channel, Year, Scenario, Period, etc.) plus "Value (USD)" */
+export type StructuredRow = Record<string, string | number>
+
 export interface ParsedData {
-  rows: TableRow[]
+  rows: StructuredRow[]
+  headers: string[]
   hasData: boolean
 }
+
+/** Standard column names for Format 1 (no Classification) */
+const HEADERS_7 = ['Channel', 'Year', 'Scenario', 'Period', 'Metric', 'Profit Center', 'Cluster', 'Value (USD)'] as const
+
+/** Standard column names for Format 2 (with Classification) */
+const HEADERS_8 = ['Channel', 'Year', 'Scenario', 'Classification', 'Period', 'Metric', 'Profit Center', 'Cluster', 'Value (USD)'] as const
+
+const VALUE_COL = 'Value (USD)'
+const PERIOD_COL = 'Period'
 
 /**
  * Check if output is text-only (single key "response" with string value — not chartable)
@@ -29,25 +45,26 @@ const isTextOnlyOutput = (data: unknown): boolean => {
 }
 
 /**
- * Recursively collect all leaf numbers with their full path (key1 > key2 > ... > keyN -> value)
+ * Recursively collect all leaf numbers with full path as string array.
+ * Leaf = numeric value; path = all keys from root to the key whose value is the number.
  */
-const collectLeafNumbers = (
+const collectPaths = (
   obj: Record<string, unknown>,
-  prefix: string,
-  out: { path: string; value: number }[]
+  path: string[],
+  out: { path: string[]; value: number }[]
 ): void => {
   for (const key of Object.keys(obj)) {
     const val = obj[key]
-    const path = prefix ? `${prefix} > ${key}` : key
+    const newPath = [...path, key]
     if (typeof val === 'number') {
-      out.push({ path, value: val })
+      out.push({ path: newPath, value: val })
     } else if (val && typeof val === 'object' && !Array.isArray(val)) {
       const inner = val as Record<string, unknown>
-      if (Object.keys(inner).length === 1 && typeof Object.values(inner)[0] === 'number') {
-        const v = Object.values(inner)[0] as number
-        out.push({ path: `${path} > ${Object.keys(inner)[0]}`, value: v })
+      const entries = Object.entries(inner)
+      if (entries.length === 1 && typeof entries[0][1] === 'number') {
+        out.push({ path: [...newPath, entries[0][0]], value: entries[0][1] })
       } else {
-        collectLeafNumbers(inner, path, out)
+        collectPaths(inner, newPath, out)
       }
     }
   }
@@ -59,8 +76,8 @@ const collectLeafNumbers = (
 export const isChartableData = (data: unknown): boolean => {
   if (!data || typeof data !== 'object') return false
   if (isTextOnlyOutput(data)) return false
-  const collected: { path: string; value: number }[] = []
-  collectLeafNumbers(data as Record<string, unknown>, '', collected)
+  const collected: { path: string[]; value: number }[] = []
+  collectPaths(data as Record<string, unknown>, [], collected)
   return collected.length > 0
 }
 
@@ -70,66 +87,64 @@ export const isRevenueForecastData = (data: unknown): boolean => {
 }
 
 /**
- * Infer which path segment index is the "category" (e.g. channel, period) for the chart.
- * Chooses the index with the most distinct values so the bar chart has one bar per category.
- */
-const inferCategorySegmentIndex = (paths: string[][]): number => {
-  if (paths.length === 0) return 0
-  const maxLen = Math.max(...paths.map((p) => p.length))
-  let bestIndex = 0
-  let maxDistinct = 0
-  for (let i = 0; i < maxLen; i++) {
-    const distinct = new Set(paths.map((p) => p[i]).filter(Boolean))
-    if (distinct.size >= maxDistinct) {
-      maxDistinct = distinct.size
-      bestIndex = i
-    }
-  }
-  return bestIndex
-}
-
-/**
- * Parse any nested response into table rows by walking the structure and inferring dimensions.
- * Keys can be any names; the parser uses path structure to set Forecast, Period, Metric, Value.
+ * Parse output that follows Channel → Year → Scenario → [Classification?] → Period → Metric → Profit Center → Cluster → value.
+ * Returns rows with dynamic headers (7 or 8 dimension columns + Value (USD)).
  */
 export const parseResponseData = (output: unknown): ParsedData => {
   if (!output || typeof output !== 'object') {
-    return { rows: [], hasData: false }
+    return { rows: [], headers: [], hasData: false }
   }
 
   const o = output as Record<string, unknown>
   if (Object.keys(o).length === 0) {
-    return { rows: [], hasData: false }
+    return { rows: [], headers: [], hasData: false }
   }
 
-  const collected: { path: string; value: number }[] = []
-  collectLeafNumbers(o, '', collected)
+  const collected: { path: string[]; value: number }[] = []
+  collectPaths(o, [], collected)
 
   if (collected.length === 0) {
-    return { rows: [], hasData: false }
+    return { rows: [], headers: [], hasData: false }
   }
 
-  const paths = collected.map(({ path }) => path.split(' > '))
-  const categoryIndex = inferCategorySegmentIndex(paths)
+  const pathLengths = collected.map((c) => c.path.length)
+  const hasClassification = pathLengths.some((len) => len === 8)
+  const headers = hasClassification ? [...HEADERS_8] : [...HEADERS_7]
+  const len = hasClassification ? 8 : 7
 
-  const rows: TableRow[] = collected.map(({ path, value }) => {
-    const parts = path.split(' > ')
-    const period = parts[categoryIndex] ?? '—'
-    const forecast = categoryIndex === 0 ? '—' : (parts[0] ?? '—')
-    const metricParts = parts.filter((_, i) => i !== categoryIndex)
-    const metric = metricParts.length > 0 ? metricParts.join(' > ') : '—'
-    return {
-      Forecast: forecast,
-      Period: period,
-      Metric: metric,
-      Value: value,
-    }
-  })
+  const rows: StructuredRow[] = collected
+    .filter((c) => c.path.length === len)
+    .map(({ path, value }) => {
+      const row: StructuredRow = {}
+      headers.forEach((h, i) => {
+        if (h === VALUE_COL) row[h] = value
+        else row[h] = path[i] ?? '—'
+      })
+      return row
+    })
 
   return {
     rows,
+    headers,
     hasData: rows.length > 0,
   }
+}
+
+/**
+ * Get chart-friendly rows (Period + Value) from parsed structured data.
+ * Uses "Period" column and "Value (USD)" for grouping/summing.
+ */
+export const getChartRows = (parsed: ParsedData): TableRow[] => {
+  if (!parsed.hasData) return []
+  const periodIdx = parsed.headers.indexOf(PERIOD_COL)
+  const valueIdx = parsed.headers.indexOf(VALUE_COL)
+  if (periodIdx === -1 || valueIdx === -1) return []
+  return parsed.rows.map((r) => ({
+    Forecast: (r['Channel'] ?? '') as string,
+    Period: (r[PERIOD_COL] ?? '—') as string,
+    Metric: (r['Metric'] ?? '') as string,
+    Value: Number(r[VALUE_COL]) || 0,
+  }))
 }
 
 /**
