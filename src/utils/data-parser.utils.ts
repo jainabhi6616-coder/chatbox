@@ -158,11 +158,12 @@ export const formatNumber = (value: number): string => {
 }
 
 /**
- * Format value for table display: use % if Metric contains "Percentage", otherwise $.
+ * Format value for table display: use % if Metric contains "Percentage" or "Accuracy", otherwise $.
  */
 export const formatValueCell = (value: number, metric?: string | number | null): string => {
   const metricStr = metric != null ? String(metric) : ''
-  if (metricStr.toLowerCase().includes('percentage')) {
+  const lower = metricStr.toLowerCase()
+  if (lower.includes('percentage') || lower.includes('accuracy')) {
     return `${formatNumber(value)}%`
   }
   return `$${formatNumber(value)}`

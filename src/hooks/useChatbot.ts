@@ -5,7 +5,7 @@ import {
   createInitialBotMessage,
 } from '../utils/message.utils'
 import { scrollToBottom } from '../utils/scroll.utils'
-import { DEFAULT_SUGGESTED_QUESTIONS } from '../constants'
+import { getDefaultSuggestedQuestionsForAccount } from '../constants'
 import { getChatbotResponse, clearConversationHistory } from '../services'
 import { useRevenueData } from '../contexts/RevenueDataContext'
 import { useDashboard } from '../contexts/DashboardContext'
@@ -15,45 +15,51 @@ import {
   saveMessagesToStorage,
   loadMessagesFromStorage,
   clearMessagesFromStorage,
-  saveConversationId,
-  loadConversationId,
 } from '../utils/storage.utils'
 import type { SuggestedQuestion } from '../services/graphql/types'
 
-export const useChatbot = () => {
-  // Load messages from localStorage on mount
-  const [messages, setMessages] = useState<Message[]>(() => {
-    const stored = loadMessagesFromStorage()
-    if (stored && stored.length > 0) {
-      // Convert stored timestamps back to Date objects
-      return stored.map((msg: Message & { timestamp: string | Date }) => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp),
-      })) as Message[]
-    }
+const toStoredMessages = (stored: any[] | null): Message[] => {
+  if (!stored || !Array.isArray(stored) || stored.length === 0) {
     return [createInitialBotMessage()]
+  }
+  return stored.map((msg: Message & { timestamp: string | Date }) => ({
+    ...msg,
+    timestamp: new Date(msg.timestamp),
+  })) as Message[]
+}
+
+export const useChatbot = () => {
+  const { account } = useAccount()
+
+  // Load messages for current account from localStorage on mount and when account changes
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const stored = loadMessagesFromStorage(account)
+    return toStoredMessages(stored)
   })
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [suggestedQuestions, setSuggestedQuestions] = useState<SuggestedQuestion[]>(() => 
-    [...DEFAULT_SUGGESTED_QUESTIONS]
+    getDefaultSuggestedQuestionsForAccount(account)
   )
   const [lastError, setLastError] = useState<{ query: string; error: Error } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const storedConversationId = loadConversationId()
-  const conversationIdRef = useRef<string>(storedConversationId || Date.now().toString())
   const { setRevenueData } = useRevenueData()
   const { setTabsAndFetchData, clearDashboard } = useDashboard()
-  const { account } = useAccount()
   const { showToast } = useToast()
 
-  // Save messages to localStorage whenever they change
+  // When account changes, load that account's messages and default suggested questions
+  useEffect(() => {
+    const stored = loadMessagesFromStorage(account)
+    setMessages(toStoredMessages(stored))
+    setSuggestedQuestions(getDefaultSuggestedQuestionsForAccount(account))
+  }, [account])
+
+  // Save messages to localStorage for current account whenever they change
   useEffect(() => {
     if (messages.length > 0) {
-      saveMessagesToStorage(messages)
-      saveConversationId(conversationIdRef.current)
+      saveMessagesToStorage(messages, account)
     }
-  }, [messages])
+  }, [messages, account])
 
   useEffect(() => {
     scrollToBottom(messagesEndRef.current)
@@ -76,7 +82,7 @@ export const useChatbot = () => {
       // Call GraphQL API which integrates with Python backend
       const response = await getChatbotResponse(
         textToSend,
-        conversationIdRef.current,
+        account,
         account
       )
 
@@ -99,7 +105,7 @@ export const useChatbot = () => {
         setSuggestedQuestions(response.suggestedQuestions)
         setTabsAndFetchData(response.suggestedQuestions)
       } else {
-        setSuggestedQuestions([...DEFAULT_SUGGESTED_QUESTIONS])
+        setSuggestedQuestions(getDefaultSuggestedQuestionsForAccount(account))
       }
       
       setMessages((prev) => [...prev, botMessage])
@@ -140,15 +146,14 @@ export const useChatbot = () => {
 
   const clearMessages = useCallback(() => {
     setMessages([createInitialBotMessage()])
-    setSuggestedQuestions([...DEFAULT_SUGGESTED_QUESTIONS])
-    clearConversationHistory(conversationIdRef.current)
-    clearMessagesFromStorage()
+    setSuggestedQuestions(getDefaultSuggestedQuestionsForAccount(account))
+    clearConversationHistory(account)
+    clearMessagesFromStorage(account)
     setRevenueData(null)
     clearDashboard()
-    conversationIdRef.current = Date.now().toString()
     setLastError(null)
     showToast('Conversation cleared', 'info', 2000)
-  }, [showToast, setRevenueData, clearDashboard])
+  }, [account, showToast, setRevenueData, clearDashboard])
 
   return {
     messages,

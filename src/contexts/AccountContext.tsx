@@ -17,7 +17,7 @@ interface AccountContextType {
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined)
 
-const DEFAULT_ACCOUNT: string = ACCOUNT_OPTIONS[0]
+const DEFAULT_ACCOUNT: string = 'ORGANIC NET REVENUES'
 
 export const AccountProvider = ({ children }: { children: ReactNode }) => {
   const [account, setAccountState] = useState<string>(DEFAULT_ACCOUNT)
