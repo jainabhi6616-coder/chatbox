@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import * as d3 from 'd3'
 import { parseResponseData, formatValueCell, getChartRows } from '../../../utils/data-parser.utils'
 import { APP_CONFIG } from '../../../config/app.config'
-import { BarChart, LineChart, PieChart } from '../../../shared/components/Charts'
+import { BarChart, LineChart, PieChart, ApiGraphChart } from '../../../shared/components/Charts'
+import type { GraphPayload } from '../../../types/graph.types'
 import './RevenueTable.css'
 
 type ViewType = 'table' | 'bar' | 'line' | 'pie'
@@ -11,14 +12,26 @@ interface RevenueTableProps {
   data?: unknown
   /** Tab/section title (e.g. from suggested_questions question) */
   title?: string
+  /** When present, charts are rendered from API graph spec instead of parsed output */
+  graphPayload?: GraphPayload | null
 }
 
-const RevenueTable = ({ data, title }: RevenueTableProps) => {
+const RevenueTable = ({ data, title, graphPayload }: RevenueTableProps) => {
   const tableRef = useRef<HTMLDivElement>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [viewType, setViewType] = useState<ViewType>('table')
+  const [viewMode, setViewMode] = useState<string>('table')
   const [containerWidth, setContainerWidth] = useState(800)
   const [downloadLoading, setDownloadLoading] = useState(false)
+  const graphs = graphPayload?.graphs ?? []
+  const hasApiGraphs = graphs.length > 0
+  const isTableView = hasApiGraphs ? viewMode === 'table' : viewType === 'table'
+  const selectedGraphIndex = viewMode.startsWith('graph-') ? parseInt(viewMode.replace('graph-', ''), 10) : 0
+
+  // Reset to table when graph payload changes (e.g. switching tabs)
+  useEffect(() => {
+    setViewMode('table')
+  }, [graphPayload])
 
   // Parse data once
   const parsed = useMemo(() => {
@@ -42,20 +55,16 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
   }, [])
 
   useEffect(() => {
-    // Clear table content when switching away from table view
-    if (viewType !== 'table') {
+    if (!isTableView) {
       if (tableRef.current) {
         d3.select(tableRef.current).selectAll('*').remove()
       }
       return
     }
-
-    // Render table only when viewType is 'table'
     if (!tableRef.current || !parsed.hasData) return
-
     d3.select(tableRef.current).selectAll('*').remove()
     renderTable(parsed)
-  }, [parsed, viewType])
+  }, [parsed, isTableView])
 
   const renderTable = (parsed: ReturnType<typeof parseResponseData>) => {
     if (!tableRef.current || !parsed.headers.length) return
@@ -114,7 +123,9 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
   }
 
   const handleViewTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setViewType(e.target.value as ViewType)
+    const v = e.target.value
+    if (hasApiGraphs) setViewMode(v)
+    else setViewType(v as ViewType)
   }
 
   const handleDownload = useCallback(async () => {
@@ -144,7 +155,7 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
     }
   }, [data])
 
-  if (!parsed.hasData) {
+  if (!parsed.hasData && !hasApiGraphs) {
     return (
       <div className="revenue-table-container">
         <div className="revenue-table-empty-state">
@@ -164,19 +175,29 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
         <div className="revenue-table-actions">
           <div className="revenue-table-view-selector">
             <label htmlFor="view-type-select" className="revenue-table-label">
-              View Type:
+              View:
             </label>
             <select
               id="view-type-select"
               className="revenue-table-dropdown"
-              value={viewType}
+              value={hasApiGraphs ? viewMode : viewType}
               onChange={handleViewTypeChange}
-              aria-label="Select chart view type"
+              aria-label="Select view type"
             >
               <option value="table">Table</option>
-              <option value="bar">Bar Graph</option>
-              <option value="line">Line Chart</option>
-              <option value="pie">Pie Chart</option>
+              {hasApiGraphs
+                ? graphs.map((g, i) => (
+                    <option key={i} value={`graph-${i}`}>
+                      {g.title ?? `${g.chartType} ${i + 1}`}
+                    </option>
+                  ))
+                : (
+                  <>
+                    <option value="bar">Bar Graph</option>
+                    <option value="line">Line Chart</option>
+                    <option value="pie">Pie Chart</option>
+                  </>
+                  )}
             </select>
           </div>
           {parsed.hasData && (
@@ -203,10 +224,14 @@ const RevenueTable = ({ data, title }: RevenueTableProps) => {
         </div>
       </div>
       <div
-        className={`revenue-table-content-wrapper ${viewType !== 'table' ? 'revenue-table-content-wrapper--chart' : ''}`}
+        className={`revenue-table-content-wrapper ${!isTableView ? 'revenue-table-content-wrapper--chart' : ''}`}
       >
-        {viewType === 'table' ? (
+        {isTableView ? (
           <div key="table-view" ref={tableRef} className="revenue-table-content" />
+        ) : hasApiGraphs && graphs[selectedGraphIndex] ? (
+          <div key="api-graph" ref={chartContainerRef} className="revenue-chart-wrapper">
+            <ApiGraphChart spec={graphs[selectedGraphIndex]} containerWidth={containerWidth} />
+          </div>
         ) : (
           <div key="chart-view" ref={chartContainerRef} className="revenue-chart-wrapper">
             <div key={viewType} className="revenue-chart-slot">

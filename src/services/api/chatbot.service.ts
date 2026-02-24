@@ -168,19 +168,27 @@ export const clearConversationHistory = (conversationId?: string): void => {
   conversationService.clear(conversationId)
 }
 
-/** Response from execute_suggestion: output and optional suggested_questions */
+/** Response from execute_suggestion: output, optional graph, optional suggested_questions */
 export interface ExecuteSuggestionResponse {
   output?: unknown
+  graph?: { graph_payload?: { graphs?: unknown[] }; warnings?: unknown[]; time_taken?: number }
   suggested_questions?: unknown[]
 }
 
+/** Tab data returned for dashboard: output for table, graph for API-driven charts */
+export interface ExecuteSuggestionTabData {
+  output: unknown
+  graph?: ExecuteSuggestionResponse['graph']
+}
+
 /**
- * Call execute_suggestion API to get tab data (content = tab information value)
+ * Call execute_suggestion API to get tab data (content = tab information value).
+ * Returns { output, graph? } when API returns both; graph is used to plot charts from API spec.
  */
 export const executeSuggestion = async (
   content: string,
   account?: string
-): Promise<unknown | null> => {
+): Promise<ExecuteSuggestionTabData | null> => {
   const requestBody = {
     Account: account ?? APP_CONFIG.ACCOUNT_TYPE,
     question: content,
@@ -208,18 +216,25 @@ export const executeSuggestion = async (
     )
   }
 
-  if (data.output !== undefined) {
-    return data.output
+  const output = data.output !== undefined
+    ? data.output
+    : (() => {
+        if (data.messages && Array.isArray(data.messages)) {
+          const messages = data.messages as Array<{ role?: string; content?: unknown }>
+          const last = messages.filter((m) => m.role === 'assistant').pop()
+          if (last && typeof last === 'object' && 'content' in last) {
+            const c = last.content
+            if (c && typeof c === 'object' && c !== null && 'output' in c) {
+              return (c as { output: unknown }).output
+            }
+          }
+        }
+        return undefined
+      })()
+
+  if (output === undefined) return null
+  return {
+    output,
+    graph: data.graph?.graph_payload?.graphs?.length ? data.graph : undefined,
   }
-  if (data.messages && Array.isArray(data.messages)) {
-    const messages = data.messages as Array<{ role?: string; content?: unknown }>
-    const last = messages.filter((m) => m.role === 'assistant').pop()
-    if (last && typeof last === 'object' && 'content' in last) {
-      const c = last.content
-      if (c && typeof c === 'object' && c !== null && 'output' in c) {
-        return (c as { output: unknown }).output
-      }
-    }
-  }
-  return null
 }

@@ -1,0 +1,40 @@
+.api-graph-chart-container {
+  width: 100%;
+  min-height: 320px;
+}
+
+.api-graph-chart-svg {
+  overflow: visible;
+}
+
+.api-graph-arc {
+  transition: opacity 0.2s;
+}
+
+.api-graph-arc:hover {
+  opacity: 0.9;
+}
+
+.api-graph-pie-label {
+  font-size: 10px;
+  fill: #374151;
+  font-weight: 600;
+}
+
+.api-graph-legend-text {
+  font-size: 12px;
+  fill: #374151;
+}
+
+.api-graph-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.api-graph-dot {
+  transition: r 0.2s;
+}
+
+.api-graph-dot:hover {
+  r: 6;
+}

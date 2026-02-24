@@ -57,7 +57,7 @@ const Dashboard = () => {
     setActiveTab(index)
   }, [])
 
-  const currentTabData = tabs.length > 0 ? tabData[activeTab] ?? null : null
+  const currentTab = tabs.length > 0 ? tabData[activeTab] ?? null : null
   const currentTabLabel = displayTabs[activeTab]?.label ?? ''
 
   return (
@@ -73,10 +73,11 @@ const Dashboard = () => {
           <div className="dashboard-tab-content">
             {loadingTabs && tabs.length > 0 ? (
               <LoadingIndicator message="Loading tab data…" />
-            ) : currentTabData ? (
+            ) : currentTab ? (
               <RevenueTable
-                data={currentTabData}
+                data={currentTab.output}
                 title={currentTabLabel}
+                graphPayload={currentTab.graph?.graph_payload}
               />
             ) : (
               <EmptyState

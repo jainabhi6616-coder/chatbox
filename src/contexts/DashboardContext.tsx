@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { executeSuggestion } from '../services/api/chatbot.service'
+import { executeSuggestion, type ExecuteSuggestionTabData } from '../services/api/chatbot.service'
 import { useAccount } from './AccountContext'
 import type { SuggestedQuestion } from '../services/graphql/types'
 
@@ -13,7 +13,7 @@ export interface DashboardTab {
 
 interface DashboardContextType {
   tabs: DashboardTab[]
-  tabData: (unknown | null)[]
+  tabData: (ExecuteSuggestionTabData | null)[]
   loadingTabs: boolean
   setTabsAndFetchData: (suggestedQuestions: SuggestedQuestion[]) => void
   clearDashboard: () => void
@@ -33,7 +33,7 @@ function toDashboardTab(sq: SuggestedQuestion, index: number): DashboardTab {
 
 export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [tabs, setTabs] = useState<DashboardTab[]>([])
-  const [tabData, setTabData] = useState<(unknown | null)[]>([])
+  const [tabData, setTabData] = useState<(ExecuteSuggestionTabData | null)[]>([])
   const [loadingTabs, setLoadingTabs] = useState(false)
   const { account } = useAccount()
 
@@ -53,7 +53,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     try {
       const results = await Promise.all(
         newTabs.map((tab) =>
-          executeSuggestion(tab.contentForApi, account).catch(() => null)
+          executeSuggestion(tab.contentForApi, account).catch((): ExecuteSuggestionTabData | null => null)
         )
       )
       setTabData(results)
