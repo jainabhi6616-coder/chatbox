@@ -184,10 +184,12 @@ export interface ExecuteSuggestionTabData {
 /**
  * Call execute_suggestion API to get tab data (content = tab information value).
  * Returns { output, graph? } when API returns both; graph is used to plot charts from API spec.
+ * @param dummyKey - Optional key for dummy response lookup (e.g. tabInformation); extra arg for API compatibility.
  */
 export const executeSuggestion = async (
   content: string,
-  account?: string
+  account?: string,
+  _dummyKey?: string
 ): Promise<ExecuteSuggestionTabData | null> => {
   const requestBody = {
     Account: account ?? APP_CONFIG.ACCOUNT_TYPE,

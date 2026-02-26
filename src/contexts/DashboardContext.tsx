@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react'
 import { executeSuggestion, type ExecuteSuggestionTabData } from '../services/api/chatbot.service'
 import { useAccount } from './AccountContext'
 import type { SuggestedQuestion } from '../services/graphql/types'
@@ -9,6 +9,8 @@ export interface DashboardTab {
   label: string
   /** Content sent to execute_suggestion API (from API "question" key) */
   contentForApi: string
+  /** Key used for dummy response lookup when API fails */
+  tabInformation?: string
 }
 
 interface DashboardContextType {
@@ -28,6 +30,7 @@ function toDashboardTab(sq: SuggestedQuestion, index: number): DashboardTab {
     id: sq.id || `tab-${index + 1}`,
     label: sq.tabInformation ?? sq.text,
     contentForApi: sq.text,
+    tabInformation: sq.tabInformation ?? undefined,
   }
 }
 
@@ -36,8 +39,9 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [tabData, setTabData] = useState<(ExecuteSuggestionTabData | null)[]>([])
   const [loadingTabs, setLoadingTabs] = useState(false)
   const { account } = useAccount()
+  const fetchRunRef = useRef(0)
 
-  const setTabsAndFetchData = useCallback(async (suggestedQuestions: SuggestedQuestion[]) => {
+  const setTabsAndFetchData = useCallback((suggestedQuestions: SuggestedQuestion[]) => {
     const list = (suggestedQuestions || []).slice(0, MAX_TABS)
     if (list.length === 0) {
       setTabs([])
@@ -50,16 +54,21 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     setTabData(list.map(() => null))
     setLoadingTabs(true)
 
-    try {
-      const results = await Promise.all(
-        newTabs.map((tab) =>
-          executeSuggestion(tab.contentForApi, account).catch((): ExecuteSuggestionTabData | null => null)
-        )
-      )
-      setTabData(results)
-    } finally {
-      setLoadingTabs(false)
-    }
+    const runId = ++fetchRunRef.current
+
+    newTabs.forEach((tab, i) => {
+      executeSuggestion(tab.contentForApi, account, tab.tabInformation)
+        .catch((): ExecuteSuggestionTabData | null => null)
+        .then((result) => {
+          if (runId !== fetchRunRef.current) return
+          setTabData((prev) => {
+            const next = [...prev]
+            if (i >= 0 && i < next.length) next[i] = result
+            return next
+          })
+          setLoadingTabs(false)
+        })
+    })
   }, [account])
 
   const clearDashboard = useCallback(() => {

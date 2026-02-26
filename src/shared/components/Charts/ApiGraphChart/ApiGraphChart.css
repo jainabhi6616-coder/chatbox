@@ -7,6 +7,15 @@
   overflow: visible;
 }
 
+.api-graph-chart-svg .chart-bar {
+  cursor: pointer;
+  transition: fill 0.15s ease;
+}
+
+.api-graph-chart-svg .chart-tooltip {
+  pointer-events: none;
+}
+
 .api-graph-arc {
   transition: opacity 0.2s;
 }

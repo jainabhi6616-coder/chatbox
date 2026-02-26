@@ -169,6 +169,39 @@ export default function ApiGraphChart({ spec, containerWidth = 800 }: ApiGraphCh
             }
           })
         }
+        // Hover tooltip: show value on bar hover
+        bars.on('mouseenter', function (_event, d) {
+          d3.select(this).attr('fill', CHART_COLORS.primaryDark)
+          const label = `${d.period}: ${formatFromSpec(d.value, yUnit, series?.format?.decimals)}`
+          const pad = 14
+          const minW = 90
+          const maxW = Math.min(320, config.width - pad * 2)
+          const approxWidth = Math.min(Math.max(label.length * 6.5, minW), maxW)
+          const barCenter = (xScale(d.period) || 0) + xScale.bandwidth() / 2
+          let tipX = barCenter - approxWidth / 2
+          tipX = Math.max(pad, Math.min(config.width - approxWidth - pad, tipX))
+          const tipY = Math.max(24, yScale(d.value) - 38)
+          const tooltip = g.append('g').attr('class', 'chart-tooltip').attr('opacity', 0)
+          tooltip.append('rect')
+            .attr('x', tipX)
+            .attr('y', tipY)
+            .attr('width', approxWidth)
+            .attr('height', 30)
+            .attr('fill', '#1f2937')
+            .attr('rx', 4)
+          tooltip.append('text')
+            .attr('x', tipX + approxWidth / 2)
+            .attr('y', tipY + 19)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#ffffff')
+            .attr('font-size', '11px')
+            .attr('font-weight', '600')
+            .text(label)
+          tooltip.transition().duration(200).attr('opacity', 1)
+        }).on('mouseleave', function () {
+          d3.select(this).attr('fill', CHART_COLORS.primary)
+          g.selectAll('.chart-tooltip').remove()
+        })
       } else {
         const line = d3.line<{ period: string; value: number }>()
           .x((d) => (xScale(d.period) || 0) + xScale.bandwidth() / 2)

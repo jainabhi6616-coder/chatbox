@@ -7,6 +7,7 @@ import RevenueTable from './RevenueTable/RevenueTable'
 import EmptyState from '../../shared/components/EmptyState'
 import LoadingIndicator from '../../shared/components/LoadingIndicator'
 import { useDashboard } from '../../contexts/DashboardContext'
+import type { GraphPayload } from '../../types/graph.types'
 import './Dashboard.css'
 
 const DEFAULT_TABS = [
@@ -71,14 +72,16 @@ const Dashboard = () => {
       <div className="dashboard-content">
         <div className="dashboard-main">
           <div className="dashboard-tab-content">
-            {loadingTabs && tabs.length > 0 ? (
+            {loadingTabs && tabData.every((d) => d === null) ? (
               <LoadingIndicator message="Loading tab data…" />
             ) : currentTab ? (
               <RevenueTable
                 data={currentTab.output}
                 title={currentTabLabel}
-                graphPayload={currentTab.graph?.graph_payload}
+                graphPayload={currentTab.graph?.graph_payload as GraphPayload | undefined}
               />
+            ) : tabs.length > 0 ? (
+              <LoadingIndicator message="Loading this tab…" />
             ) : (
               <EmptyState
                 title={currentTabLabel ? `No data for ${currentTabLabel}` : 'No data'}
