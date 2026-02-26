@@ -7,7 +7,8 @@ import {
   createSVGContainer,
   addChartTitle,
   addAxisLabels,
-  CHART_COLORS,
+  getBarColorByPeriod,
+  getBarHoverColorByPeriod,
 } from '../../../../utils/chart.utils'
 import { TableRow } from '../../../../utils/data-parser.utils'
 import './BarChart.css'
@@ -75,7 +76,7 @@ const BarChart = ({ data, containerWidth = 800 }: BarChartProps) => {
       .attr('stroke', '#e5e7eb')
       .attr('stroke-dasharray', '2,2')
 
-    // Add bars
+    // Add bars (months vs quarters get different colours)
     const bars = g.selectAll('.bar')
       .data(chartData)
       .enter()
@@ -85,7 +86,7 @@ const BarChart = ({ data, containerWidth = 800 }: BarChartProps) => {
       .attr('y', config.height)
       .attr('width', xScale.bandwidth())
       .attr('height', 0)
-      .attr('fill', CHART_COLORS.primary)
+      .attr('fill', (d) => getBarColorByPeriod(d.period))
       .attr('rx', 4)
       .attr('ry', 4)
 
@@ -116,7 +117,7 @@ const BarChart = ({ data, containerWidth = 800 }: BarChartProps) => {
     // Add hover effects — tooltip with dynamic width so long names don't get cut
     bars.on('mouseenter', function(_event, d) {
       d3.select(this)
-        .attr('fill', CHART_COLORS.primaryDark)
+        .attr('fill', getBarHoverColorByPeriod(d.period))
         .attr('transform', 'scale(1.05)')
         .attr('transform-origin', 'center bottom')
 
@@ -156,9 +157,9 @@ const BarChart = ({ data, containerWidth = 800 }: BarChartProps) => {
         .duration(200)
         .attr('opacity', 1)
     })
-    .on('mouseleave', function() {
+    .on('mouseleave', function(_event, d) {
       d3.select(this)
-        .attr('fill', CHART_COLORS.primary)
+        .attr('fill', getBarColorByPeriod(d.period))
         .attr('transform', 'scale(1)')
 
       g.selectAll('.chart-tooltip').remove()

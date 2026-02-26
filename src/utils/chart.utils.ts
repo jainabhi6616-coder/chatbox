@@ -84,6 +84,55 @@ export const CHART_COLORS = {
   white: '#ffffff',
 }
 
+/** Bar colors for period types (months vs quarters) */
+export const BAR_PERIOD_COLORS = {
+  month: '#667eea',
+  quarter: '#1976d2',
+  monthHover: '#5a67d8',
+  quarterHover: '#1565c0',
+}
+
+const MONTH_NAMES = new Set([
+  'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+  'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
+])
+const QUARTER_PATTERN = /^Q[1-4]$/i
+
+/**
+ * True if the period label is a month (e.g. JANUARY, December).
+ */
+export function isMonthPeriod(period: string): boolean {
+  if (!period || typeof period !== 'string') return false
+  const upper = period.trim().toUpperCase()
+  return MONTH_NAMES.has(upper)
+}
+
+/**
+ * True if the period label is a quarter (e.g. Q1, Q2).
+ */
+export function isQuarterPeriod(period: string): boolean {
+  if (!period || typeof period !== 'string') return false
+  return QUARTER_PATTERN.test(period.trim())
+}
+
+/**
+ * Bar fill color by period type (month vs quarter). Falls back to primary for other labels.
+ */
+export function getBarColorByPeriod(period: string): string {
+  if (isQuarterPeriod(period)) return BAR_PERIOD_COLORS.quarter
+  if (isMonthPeriod(period)) return BAR_PERIOD_COLORS.month
+  return CHART_COLORS.primary
+}
+
+/**
+ * Bar hover fill by period type.
+ */
+export function getBarHoverColorByPeriod(period: string): string {
+  if (isQuarterPeriod(period)) return BAR_PERIOD_COLORS.quarterHover
+  if (isMonthPeriod(period)) return BAR_PERIOD_COLORS.monthHover
+  return CHART_COLORS.primaryDark
+}
+
 /**
  * Get color scale for charts
  */

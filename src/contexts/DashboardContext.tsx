@@ -56,6 +56,8 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
 
     const runId = ++fetchRunRef.current
 
+    // Fire all tab requests in parallel; each tab updates as soon as its response arrives
+    // (first tab to complete clears global loading; others fill in in background)
     newTabs.forEach((tab, i) => {
       executeSuggestion(tab.contentForApi, account, tab.tabInformation)
         .catch((): ExecuteSuggestionTabData | null => null)

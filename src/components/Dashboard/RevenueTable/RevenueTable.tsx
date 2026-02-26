@@ -28,10 +28,10 @@ const RevenueTable = ({ data, title, graphPayload }: RevenueTableProps) => {
   const isTableView = hasApiGraphs ? viewMode === 'table' : viewType === 'table'
   const selectedGraphIndex = viewMode.startsWith('graph-') ? parseInt(viewMode.replace('graph-', ''), 10) : 0
 
-  // Reset to table when graph payload changes (e.g. switching tabs)
+  // When we have API graphs (dashboard tabs), default to first chart; otherwise table
   useEffect(() => {
-    setViewMode('table')
-  }, [graphPayload])
+    setViewMode(hasApiGraphs ? 'graph-0' : 'table')
+  }, [graphPayload, hasApiGraphs])
 
   // Parse data once
   const parsed = useMemo(() => {
